@@ -24,4 +24,7 @@ t_ping_info		*parseargs(int argc, char **argv);
 void			handle_options(t_ping_info *info, char *arg, char ***argv);
 int				get_opt_val(t_ping_info *info, char flag, char ***argv);
 
+
+void			print_ping_info(t_ping_info *info);
+
 #endif

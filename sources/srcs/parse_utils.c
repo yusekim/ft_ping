@@ -28,7 +28,7 @@ t_ping_info *parseargs(int argc, char **argv)
 		return NULL;
 	char *arg;
 
-	while (!(options.flags & Q_FLAG || options.flags & INVALID_F) && ++argv)
+	while (!(options.flags & Q_FLAG || options.flags & INVALID_F) && *(++argv))
 	{
 		arg = *argv;
 		if (*arg == '-')
@@ -69,9 +69,7 @@ void handle_options(t_ping_info *info, char *arg, char ***argv)
 		case 'w':
 			options.flags |= W_FLAG;
 			if (get_opt_val(info, arg[i], argv))
-			{
 				return;
-			}
 			break;
 		case 'W':
 			options.flags |= CW_FLAG;
@@ -141,4 +139,29 @@ int get_opt_val(t_ping_info *info, char flag, char ***argv)
 		info->W_flag_val = (int)value;
 	}
 	return 0;
+}
+
+void print_ping_info(t_ping_info *info)
+{
+	char optstr[] = "v?flnwW";
+	for (int i = 0; i < strlen(optstr); i++)
+	{
+		if (!(options.flags & (1 << i)))
+			optstr[i] = '.';
+	}
+	printf("\n===========ft_ping==============\n");
+	printf("options: [%s]\n", optstr);
+	if (info && optstr[3] != '.')
+		printf("\tpreload: %d\n", info->l_flag_val);
+	if (info && optstr[5] != '.')
+		printf("\ttimeout: %d\n", info->w_flag_val);
+	if (info && optstr[6] != '.')
+		printf("\tlinger: %d\n", info->W_flag_val);
+
+	int len = split_len(options.hosts);
+	if (len)
+		printf("\narguments:\n");
+	for (int i = 0; i < len; i++)
+		printf("\t%s\n", options.hosts[i]);
+	printf("===============================\n");
 }
