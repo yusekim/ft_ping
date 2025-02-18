@@ -8,7 +8,6 @@ typedef struct s_ping_info				t_ping_info;
 struct s_options
 {
 	unsigned char flags;
-	unsigned char invalid_option;
 	char	**hosts;
 };
 

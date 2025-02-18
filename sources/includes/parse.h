@@ -16,7 +16,9 @@
 "                             falling into normal mode of behavior (root only)\n" \
 "  -?                         give this help list\n"
 
-# define INVALID_ARG_MSG "ping: invalid"
+# define INVALID_MSG "ping: invalid"
+
+# define INVALID_ARG_HELP_MSG "Try 'ping -?' for more information.\n"
 
 t_ping_info		*parseargs(int argc, char **argv);
 void			handle_options(t_ping_info *info, char *arg, char ***argv);

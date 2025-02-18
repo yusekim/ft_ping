@@ -13,7 +13,7 @@ extern t_options options;
 // ping -w 0 8.8.8.8 -> stderr: "ping: option value too small: 0"
 
 //
-int ping_free(t_ping_info *info)
+void *ping_free(t_ping_info *info)
 {
 	free(info);
 	return 0;
@@ -38,6 +38,7 @@ t_ping_info *parseargs(int argc, char **argv)
 	}
 	if (options.flags & Q_FLAG || options.flags & INVALID_F)
 		return ping_free(info);
+	return info;
 }
 
 void handle_options(t_ping_info *info, char *arg, char ***argv)
@@ -79,7 +80,7 @@ void handle_options(t_ping_info *info, char *arg, char ***argv)
 			break;
 		default:
 			options.flags |= INVALID_F;
-			options.invalid_option = arg[i];
+			dprintf(STDERR_FILENO, "%s option -- '%c'\n%s", INVALID_MSG, arg[i], INVALID_ARG_HELP_MSG);
 			return;
 		}
 	}
@@ -106,9 +107,9 @@ int get_opt_val(t_ping_info *info, char flag, char ***argv)
 	{
 		options.flags |= INVALID_F;
 		if (flag == 'l')
-			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_ARG_MSG, **argv);
+			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_MSG, **argv);
 		else
-			dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_ARG_MSG, **argv, check);
+			dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_MSG, **argv, check);
 		return 1;
 	}
 	long value = atol(**argv);
@@ -116,7 +117,7 @@ int get_opt_val(t_ping_info *info, char flag, char ***argv)
 	{
 		options.flags |= INVALID_F;
 		if (flag == 'l')
-			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_ARG_MSG, **argv);
+			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_MSG, **argv);
 		else
 			dprintf(STDERR_FILENO, "ping: option value too big: %s\n", **argv);
 		return 1;
