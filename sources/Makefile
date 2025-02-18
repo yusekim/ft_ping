@@ -16,7 +16,10 @@ LINE_CLEAR  =   "\x1b[1A\x1b[M"
 NAME = ft_ping
 CC = cc
 CFLAGS = -I $(HEADERS_DIR) #-Wall -Wextra -Werror
-SRCS = ./srcs/main.c ./srcs/utils.c
+SRCS = ./srcs/main.c \
+		./srcs/parse_utils.c \
+		./srcs/strs_utils.c \
+		./srcs/skip_list.c
 OBJS = $(SRCS:.c=.o)
 
 
@@ -25,8 +28,8 @@ HEADERS_DIR=./includes
 all : $(NAME)
 
 $(NAME) : $(OBJS)
-	@echo $(GREEN)"---building ft_ping"
-	@$(CC) $(CFLAGS) -o $(NAME) $^
+	echo $(GREEN)"---building ft_ping"
+	$(CC) $(CFLAGS) -o $(NAME) $^
 	@echo $(GREEN)"\n==========================================================\n"$(EOC)
 	@echo $(YELLOW)"                     FT_PING IS READY"$(EOC)
 	@echo $(GREEN)"\n==========================================================\n"$(EOC)
