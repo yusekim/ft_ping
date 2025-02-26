@@ -17,8 +17,10 @@ NAME = ft_ping
 CC = cc
 CFLAGS = -I $(HEADERS_DIR) #-Wall -Wextra -Werror
 SRCS = ./srcs/main.c \
+		./srcs/parse.c \
 		./srcs/parse_utils.c \
 		./srcs/strs_utils.c \
+		./srcs/utils.c \
 		./srcs/skip_list.c
 OBJS = $(SRCS:.c=.o)
 

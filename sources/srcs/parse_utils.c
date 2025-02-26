@@ -1,88 +1,74 @@
-#include "ft_ping.h"
 #include "parse.h"
 #include "strs.h"
 
-extern t_options options;
 
-// ping -> stderr
-// ping -Z -> stderr
-// ping -?Z google.com -> stdout
-// ping -Z? google.com -> stderr
-// ping -QZ google.com -> stderr
-// ping -cl 2 3 google.com -> 문제없어보이면 stdout
-// ping -w 0 8.8.8.8 -> stderr: "ping: option value too small: 0"
+/*
+yusekim@debian:~$ ping -c 1 --ttl=1 google.com
+PING google.com (172.217.25.174): 56 data bytes
+36 bytes from 192.168.64.1: Time to live exceeded
+--- google.com ping statistics ---
+1 packets transmitted, 0 packets received, 100% packet loss
 
-//
-void *ping_free(t_ping_info *info)
+yusekim@debian:~$ ping -vc 1 --ttl=1 google.com
+PING google.com (172.217.25.174): 56 data bytes, id 0x07ae = 1966
+36 bytes from 192.168.64.1: Time to live exceeded
+IP Hdr Dump:
+ 4500 0054 c9a4 0000 0101 28d2 c0a8 4003 acd9 19ae
+Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst     Data
+ 4  5  00 0054 c9a4   0 0000  01  01 28d2 192.168.64.3  172.217.25.174
+ICMP: type 8, code 0, size 64, id 0x07ae, seq 0x0000
+--- google.com ping statistics ---
+1 packets transmitted, 0 packets received, 100% packet loss
+
+yusekim@debian:~$ ping -vc 1 --ttl=100 google.com
+PING google.com (172.217.25.174): 56 data bytes, id 0x07af = 1967
+64 bytes from 172.217.25.174: icmp_seq=0 ttl=116 time=120.373 ms
+--- google.com ping statistics ---
+1 packets transmitted, 1 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 120.373/120.373/120.373/0.000 ms
+
+yusekim@debian:~$ ping -vc 1 google.com
+PING google.com (142.250.76.142): 56 data bytes, id 0x07b2 = 1970
+64 bytes from 142.250.76.142: icmp_seq=0 ttl=115 time=50.754 ms
+--- google.com ping statistics ---
+1 packets transmitted, 1 packets received, 0% packet loss
+round-trip min/avg/max/stddev = 50.754/50.754/50.754/0.000 ms
+*/
+
+
+void *info_free(t_ping_info *info, int is_perror)
 {
-	free(info);
-	return 0;
+	t_ping_info *temp;
+	if (is_perror)
+		perror("ft_ping");
+	while (info)
+	{
+		temp = info;
+		// slist_free(temp->packets); // TODO
+		free(temp->pre_packets);
+		free(temp);
+		info = info->next;
+	}
+	return NULL;
 }
-//
 
-
-t_ping_info *parseargs(int argc, char **argv)
+char *build_preload(int num, uint16_t id)
 {
-	t_ping_info *info = malloc(sizeof(t_ping_info));
-	if (info == NULL)
+	char *packets = calloc(num, PACKET_SIZE * sizeof(char));
+	if (packets == NULL)
 		return NULL;
-	char *arg;
-
-	while (!(options.flags & Q_FLAG || options.flags & INVALID_F) && *(++argv))
+	for (int i = 0; i < num; i++)
 	{
-		arg = *argv;
-		if (*arg == '-')
-			handle_options(info, arg, &argv);
-		else
-			options.hosts = add_str(options.hosts, strdup(arg));
+		struct icmphdr *icmp = (struct icmphdr *)(packets + i * PACKET_SIZE);
+		icmp->type = ICMP_ECHO;
+		icmp->code = 0;
+		icmp->un.echo.id = id;
+		icmp->un.echo.sequence = i;
+		icmp->checksum = calculate_cksum((void *)icmp, PACKET_SIZE);
 	}
-	if (options.flags & Q_FLAG || options.flags & INVALID_F)
-		return ping_free(info);
-	return info;
+	return packets;
 }
 
-void handle_options(t_ping_info *info, char *arg, char ***argv)
-{
-	size_t len = strlen(arg);
-	for (int i = 1; i < len; i++)
-	{
-		switch (arg[i])
-		{
-		case '?':
-			options.flags |= Q_FLAG;
-			dprintf(STDOUT_FILENO, "%s", PING_USAGE);
-			return;
-		case 'v':
-			options.flags |= V_FLAG;
-			break;
-		case 'f':
-			options.flags |= F_FLAG;
-			break;
-		case 'n':
-			options.flags |= N_FLAG;
-			break;
-		case 'l':
-			options.flags |= L_FLAG;
-			if (get_opt_val(info, arg[i], argv)) // 예외상황 발생시 INVALID_F 비트 키고 메세지 출력
-				return;
-			break;
-		case 'w':
-			options.flags |= W_FLAG;
-			if (get_opt_val(info, arg[i], argv))
-				return;
-			break;
-		case 'W':
-			options.flags |= CW_FLAG;
-			if (get_opt_val(info, arg[i], argv))
-				return;
-			break;
-		default:
-			options.flags |= INVALID_F;
-			dprintf(STDERR_FILENO, "%s option -- '%c'\n%s", INVALID_MSG, arg[i], INVALID_ARG_HELP_MSG);
-			return;
-		}
-	}
-}
 
 char *is_ascii_number(char *str)
 {
@@ -97,71 +83,27 @@ char *is_ascii_number(char *str)
 	return NULL;
 }
 
-int get_opt_val(t_ping_info *info, char flag, char ***argv)
-{
-	++(*argv);
-	char *check = is_ascii_number(**argv);
-	if (check)
-	{
-		options.flags |= INVALID_F;
-		if (flag == 'l')
-			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_MSG, **argv);
-		else
-			dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_MSG, **argv, check);
-		return 1;
-	}
-	long value = atol(**argv);
-	if (value < 0 || value > INT32_MAX)
-	{
-		options.flags |= INVALID_F;
-		if (flag == 'l')
-			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_MSG, **argv);
-		else
-			dprintf(STDERR_FILENO, "ping: option value too big: %s\n", **argv);
-		return 1;
-	}
-	else if (value == 0 && !(flag == 'l'))
-	{
-		options.flags |= INVALID_F;
-		dprintf(STDERR_FILENO, "ping: option value too small: %s\n", **argv);
-		return 1;
-	}
-
-	switch (flag)
-	{
-	case 'l':
-		info->l_flag_val = (int)value;
-		break;
-	case 'w':
-		info->w_flag_val = (int)value;
-		break;
-	case 'W':
-		info->W_flag_val = (int)value;
-	}
-	return 0;
-}
-
-void print_ping_info(t_ping_info *info)
+void print_ping_info(t_ping_info *info, t_options *options)
 {
 	char optstr[] = "v?flnwW";
 	for (int i = 0; i < strlen(optstr); i++)
 	{
-		if (!(options.flags & (1 << i)))
+		if (!(options->flags & (1 << i)))
 			optstr[i] = '.';
 	}
 	printf("\n===========ft_ping==============\n");
 	printf("options: [%s]\n", optstr);
-	if (info && optstr[3] != '.')
-		printf("\tpreload: %d\n", info->l_flag_val);
-	if (info && optstr[5] != '.')
-		printf("\ttimeout: %d\n", info->w_flag_val);
-	if (info && optstr[6] != '.')
-		printf("\tlinger: %d\n", info->W_flag_val);
+	if (optstr[3] != '.')
+		printf("\tpreload: %d\n", options->preload_num);
+	if (optstr[5] != '.')
+		printf("\ttimeout: %d\n", options->timeout);
+	if (optstr[6] != '.')
+		printf("\tttl value: %d\n", options->ttl_val);
 
-	int len = split_len(options.hosts);
+	int len = split_len(options->hosts);
 	if (len)
 		printf("\narguments:\n");
 	for (int i = 0; i < len; i++)
-		printf("\t%s\n", options.hosts[i]);
-	printf("===============================\n");
+		printf("\t%s\n", options->hosts[i]);
+	printf("================================\n");
 }

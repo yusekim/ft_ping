@@ -1,4 +1,4 @@
-#include "skip_list.h"
+#include "structures.h"
 
 static t_slist	*nodes_to_null[MAX_LEVEL + 1];		// 각 level에서 NULL 을 가르키는 last nodes pointer
 
