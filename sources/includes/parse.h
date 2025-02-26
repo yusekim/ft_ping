@@ -24,7 +24,7 @@ t_ping_info		*parseargs(int argc, char **argv, t_options *options);
 t_ping_info		*build_info(t_options *options, int len);
 void			handle_options(t_options *t_options, char *arg, char ***argv);
 int				get_opt_val(t_options *options, char flag, char ***argv);
-int				get_ttl_val(t_options *options, char *flag);
+int				get_ttl_val(t_options *options, char *flag, int *idx);
 
 void			*info_free(t_ping_info *info, int is_perror);
 char			*build_preload(int num, uint16_t id);

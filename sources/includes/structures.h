@@ -25,7 +25,7 @@ struct s_options
 	char			**hosts;
 	int				preload_num;
 	int				timeout;
-	int				ttl_val;
+	uint8_t			ttl_val;
 };
 
 struct s_ping_info

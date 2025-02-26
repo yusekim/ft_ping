@@ -1,7 +1,6 @@
 #include "parse.h"
 #include "strs.h"
 
-
 /*
 yusekim@debian:~$ ping -c 1 --ttl=1 google.com
 PING google.com (172.217.25.174): 56 data bytes
@@ -35,6 +34,7 @@ PING google.com (142.250.76.142): 56 data bytes, id 0x07b2 = 1970
 round-trip min/avg/max/stddev = 50.754/50.754/50.754/0.000 ms
 */
 
+#include <unistd.h>
 
 void *info_free(t_ping_info *info, int is_perror)
 {
@@ -43,11 +43,13 @@ void *info_free(t_ping_info *info, int is_perror)
 		perror("ft_ping");
 	while (info)
 	{
-		temp = info;
+		temp = info->next;
 		// slist_free(temp->packets); // TODO
-		free(temp->pre_packets);
-		free(temp);
-		info = info->next;
+		if (info->pre_packets)
+			free(info->pre_packets);
+		free(info);
+		write(1, "HERE6\n", 6);
+		info = temp;
 	}
 	return NULL;
 }
@@ -69,22 +71,28 @@ char *build_preload(int num, uint16_t id)
 	return packets;
 }
 
-
 char *is_ascii_number(char *str)
 {
-	if (*str == '-')
-		str++;
 	size_t len = strlen(str);
+	if (*str == '-')
+	{
+		if (len == 1)
+			return str;
+		str++;
+		len--;
+	}
 	for (size_t i = 0; i < len; i++)
 	{
 		if (str[i] < '0' || str[i] > '9')
-			return (&str[i]);
+			return (str + i);
 	}
 	return NULL;
 }
 
 void print_ping_info(t_ping_info *info, t_options *options)
 {
+	if (info == NULL)
+		return ;
 	char optstr[] = "v?flnwW";
 	for (int i = 0; i < strlen(optstr); i++)
 	{
@@ -106,4 +114,5 @@ void print_ping_info(t_ping_info *info, t_options *options)
 	for (int i = 0; i < len; i++)
 		printf("\t%s\n", options->hosts[i]);
 	printf("================================\n");
+
 }

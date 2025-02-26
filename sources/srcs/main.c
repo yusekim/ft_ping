@@ -18,7 +18,8 @@ int main(int argc, char **argv)
 		split_free(options.hosts);
 		if (options.flags & Q_FLAG && options.flags & INVALID_F)
 			return (EX_USAGE);
-		return (options.flags & Q_FLAG ? 0 : 1);
+		else
+			return (options.flags & Q_FLAG ? 0 : 1);
 	}
 	srand48(time(NULL));
 }

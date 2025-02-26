@@ -38,12 +38,9 @@ t_ping_info *parseargs(int argc, char **argv, t_options *options)
 
 t_ping_info *build_info(t_options *options, int len) // TODO build t_ping_info linked-list
 {
-	t_ping_info *head = calloc(1, sizeof(t_options));
+	t_ping_info *head = calloc(1, sizeof(t_ping_info));
 	if (head == NULL)
-	{
-		perror("ft_ping");
-		return NULL;
-	}
+		return info_free(head, 1);
 	t_ping_info *temp = head;
 	uint16_t id = getpid();
 	int idx = 0;
@@ -55,14 +52,14 @@ t_ping_info *build_info(t_options *options, int len) // TODO build t_ping_info l
 			if (temp->next == NULL)
 				return info_free(head, 1);
 		}
-		// temp->dest = getdest(options->hosts[idx]); // 얘 어캄?
+		// temp->dest = getdest(options->hosts[idx]); // TODO
 		temp->sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		if (temp->sockfd < 0)
 			return info_free(head, 1);
 		if (options->preload_num)
 		{
 			temp->pre_packets = build_preload(options->preload_num, id);
-			if (temp->pre_packets = NULL)
+			if (temp->pre_packets == NULL)
 				return info_free(head, 1);
 		}
 		temp = temp->next;
@@ -104,7 +101,7 @@ void handle_options(t_options *options, char *arg, char ***argv)
 			break;
 		case '-':
 			options->flags |= TTL_FLAG;
-			if (get_ttl_val(options, &(arg[i + 1]))) // TODO
+			if (get_ttl_val(options, &(arg[i]), &i)) // TODO
 				return;
 			break;
 		default:
@@ -120,7 +117,7 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	++(*argv);
 	if (!*argv || !**argv)
 	{
-		options->flags |= Q_FLAG;
+		options->flags |= Q_FLAG | INVALID_F;
 		dprintf(STDERR_FILENO, "ft_ping: option requires an argument -- '%c'\n%s\n", flag, INVALID_ARG_HELP_MSG);
 		return 1;
 	}
@@ -163,8 +160,34 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	return 0;
 }
 
-int get_ttl_val(t_options *options, char *flag)
+int get_ttl_val(t_options *options, char *flag, int *idx)
 {
-	if (strncmp("ttl=", flag, 4))
-		return 0; // TODO
+	if (strncmp("-ttl=", flag, 5))
+	{
+		options->flags |= Q_FLAG | INVALID_F;
+		dprintf(STDERR_FILENO, "ping: ping: unrecognized option '-%s'\n%s\n", flag, INVALID_ARG_HELP_MSG);
+		return 1;
+	}
+	flag += 5;
+	char *check = is_ascii_number(flag);
+	if (check)
+	{
+		options->flags |= INVALID_F;
+		dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_MSG, flag, check);
+		return 1;
+	}
+	int value = atoi(flag);
+	if (value < 0 || value > UINT8_MAX)
+	{
+		options->flags |= INVALID_F;
+		dprintf(STDERR_FILENO, "ft_ping: option value too big: %s\n", flag);
+		return 1;
+	}
+	else if (value == 0)
+	{
+		options->flags |= INVALID_F;
+		dprintf(STDERR_FILENO, "ft_ping: option value too small: %s\n", flag);
+		return 1;
+	}
+	options->ttl_val = (uint8_t)value;
 }
