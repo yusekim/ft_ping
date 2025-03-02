@@ -2,7 +2,6 @@
 #include "parse.h"
 #include "strs.h"
 
-
 int main(int argc, char **argv)
 {
 	t_options options;
@@ -12,10 +11,15 @@ int main(int argc, char **argv)
 		dprintf(STDERR_FILENO, "ping: missing host operand\n%s", INVALID_ARG_HELP_MSG);
 		return (EX_USAGE);
 	}
-	int res = getoptions(argc, argv, &options);
-	print_option_info(&options);
-	if (res != 0)
-		return (res);
+	t_ping_info *ping_info = parseargs(argc, argv, &options);
+	print_ping_info(ping_info, &options);
+	if (ping_info == NULL)
+	{
+		split_free(options.hosts);
+		if (options.flags & Q_FLAG && options.flags & INVALID_F)
+			return (EX_USAGE);
+		else
+			return (options.flags & Q_FLAG ? 0 : 1);
+	}
 	srand48(time(NULL));
-	return(exec_ping(&options));
 }

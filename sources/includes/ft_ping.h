@@ -6,7 +6,7 @@
 
 # define V_FLAG (1 << 0)	// v(verbose) flag
 # define Q_FLAG (1 << 1)	// ?(usage) flag
-# define F_FLAG (1 << 2)	// f(flood) flag
+# define C_FLAG (1 << 2)	// c(count N) flag
 # define L_FLAG (1 << 3)	// l(preload N) flag
 # define N_FLAG (1 << 4)	// n(numeric) flag
 # define W_FLAG (1 << 5)	// w(timeout N) flag

@@ -36,6 +36,35 @@ t_ping_info *parseargs(int argc, char **argv, t_options *options)
 	return (build_info(options, len));
 }
 
+int getoptions(int argc, char **argv, t_options *options)
+{
+	char *arg;
+	int len;
+
+	while (!(options->flags & Q_FLAG || options->flags & INVALID_F) && *(++argv))
+	{
+		arg = *argv;
+		if (*arg == '-')
+			handle_options(options, arg, &argv);
+		else
+			options->hosts = add_str(options->hosts, strdup(arg));
+	}
+	if (options->flags & Q_FLAG && options->flags & INVALID_F)
+		return (EX_USAGE);
+	else if (options->flags & INVALID_F)
+		return 1;
+	else if (options->flags & Q_FLAG)
+		return 0;
+	len = split_len(options->hosts);
+	if (len == 0)
+	{
+		dprintf(STDERR_FILENO, "ft_ping: missing host operand\n%s\n", INVALID_ARG_HELP_MSG);
+		return (EX_USAGE);
+	}
+	return 0;
+}
+
+
 t_ping_info *build_info(t_options *options, int len) // TODO build t_ping_info linked-list
 {
 	t_ping_info *head = calloc(1, sizeof(t_ping_info));
@@ -46,13 +75,15 @@ t_ping_info *build_info(t_options *options, int len) // TODO build t_ping_info l
 	int idx = 0;
 	while (temp)
 	{
-		if (--len > 0)
+		if (len - idx > 1)
 		{
-			temp->next = calloc(1, sizeof(t_options));
+			temp->next = calloc(1, sizeof(t_ping_info));
 			if (temp->next == NULL)
 				return info_free(head, 1);
 		}
-		// temp->dest = getdest(options->hosts[idx]); // TODO
+		temp->dest_info = getdestinfo(options->hosts[idx]);
+		if (temp->dest_info == NULL)
+			return (info_free(head, 0));
 		temp->sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 		if (temp->sockfd < 0)
 			return info_free(head, 1);
@@ -68,7 +99,6 @@ t_ping_info *build_info(t_options *options, int len) // TODO build t_ping_info l
 	return head;
 }
 
-
 void handle_options(t_options *options, char *arg, char ***argv)
 {
 	size_t len = strlen(arg);
@@ -83,8 +113,10 @@ void handle_options(t_options *options, char *arg, char ***argv)
 		case 'v':
 			options->flags |= V_FLAG;
 			break;
-		case 'f':
-			options->flags |= F_FLAG;
+		case 'c':
+			options->flags |= C_FLAG;
+			if (get_opt_val(options, arg[i], argv))
+				return;
 			break;
 		case 'n':
 			options->flags |= N_FLAG;

@@ -23,7 +23,9 @@ struct s_options
 {
 	unsigned char	flags;
 	char			**hosts;
+	int				hosts_num;
 	int				preload_num;
+	int				packets_count;
 	int				timeout;
 	uint8_t			ttl_val;
 };
@@ -31,8 +33,7 @@ struct s_options
 struct s_ping_info
 {
 	int					sockfd;
-	struct addrinfo		*res;			// needs to free
-	struct sockaddr_in	dest;
+	struct addrinfo		*dest_info;			// needs to free
 	t_slist				*packets;
 	char				*pre_packets;
 	int					dup_sum;

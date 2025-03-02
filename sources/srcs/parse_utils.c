@@ -48,7 +48,6 @@ void *info_free(t_ping_info *info, int is_perror)
 		if (info->pre_packets)
 			free(info->pre_packets);
 		free(info);
-		write(1, "HERE6\n", 6);
 		info = temp;
 	}
 	return NULL;
@@ -89,11 +88,30 @@ char *is_ascii_number(char *str)
 	return NULL;
 }
 
+struct addrinfo *getdestinfo(char *hostname)
+{
+	struct addrinfo hints, *res;
+	int status = 0;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_RAW;
+	hints.ai_protocol = IPPROTO_ICMP;
+	status = getaddrinfo(hostname, NULL, &hints, &res);
+	if (status != 0)
+	{
+		dprintf(STDERR_FILENO, "ft_ping: %s\n", gai_strerror(status));
+		return NULL;
+	}
+	return res;
+}
+
 void print_ping_info(t_ping_info *info, t_options *options)
 {
 	if (info == NULL)
 		return ;
 	char optstr[] = "v?flnwW";
+	char ipstr[INET_ADDRSTRLEN];
 	for (int i = 0; i < strlen(optstr); i++)
 	{
 		if (!(options->flags & (1 << i)))
@@ -112,7 +130,38 @@ void print_ping_info(t_ping_info *info, t_options *options)
 	if (len)
 		printf("\narguments:\n");
 	for (int i = 0; i < len; i++)
-		printf("\t%s\n", options->hosts[i]);
+	{
+		struct addrinfo	*p = info->dest_info;
+		struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+		void *addr = &(ipv4->sin_addr);
+		inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
+		printf("\thostname[%d]: %s\n", i, options->hosts[i]);
+		printf("\tipaddr: %s\n", ipstr);
+		info = info->next;
+	}
 	printf("================================\n");
+}
 
+void print_option_info(t_options *options)
+{
+	char optstr[] = "v?clnwt";
+	for (int i = 0; i < 7; i++)
+	{
+		if (!(options->flags & (1 << i)))
+			optstr[i] = '.';
+	}
+	printf("\n===========ft_ping==============\n");
+	printf("options: [%s]\n", optstr);
+	if (optstr[3] != '.')
+		printf("\tpreload: %d\n", options->preload_num);
+	if (optstr[5] != '.')
+		printf("\ttimeout: %d\n", options->timeout);
+	if (optstr[6] != '.')
+		printf("\tttl value: %d\n", options->ttl_val);
+	int len = split_len(options->hosts);
+	if (len)
+		printf("\narguments:\n");
+	for (int i = 0; i < len; i++)
+		printf("\thostname[%d]: %s\n", i, options->hosts[i]);
+	printf("================================\n");
 }
