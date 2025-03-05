@@ -10,6 +10,7 @@
 # include <sysexits.h>
 # include <string.h>
 # include <time.h>
+# include "strs.h"
 # include "utils.h"
 
 # define MAX_LEVEL 9
@@ -45,12 +46,13 @@ struct s_slist
 	int						val;
 	int						level;
 	int						dup_cnt;
-	char					*packet[64];
+	char					packet[64];
 	struct s_slist			*level_ptrs[MAX_LEVEL + 1];
 };
 
 t_slist			*slist_search(t_slist *head, int key);
 void			slist_push_back(t_slist **head, int key);
+void			slist_free(t_slist *head);
 void			slist_delete(t_slist **head, int key);
 int				randomlevel();
 

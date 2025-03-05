@@ -21,18 +21,16 @@
 # define INVALID_ARG_HELP_MSG "Try 'ping -?' for more information.\n"
 
 int				getoptions(int argc, char **argv, t_options *options);
-t_ping_info		*parseargs(int argc, char **argv, t_options *options);
-t_ping_info		*build_info(t_options *options, int len);
 void			handle_options(t_options *t_options, char *arg, char ***argv);
 int				get_opt_val(t_options *options, char flag, char ***argv);
 int				get_ttl_val(t_options *options, char *flag, int *idx);
+
+t_ping_info		*build_info(t_options *options, int len);
 
 void			*info_free(t_ping_info *info, int is_perror);
 char			*build_preload(int num, uint16_t id);
 char			*is_ascii_number(char *str);
 struct addrinfo	*getdestinfo(char *hostname);
 
-
-void			print_ping_info(t_ping_info *info, t_options *options);
 void			print_option_info(t_options *options);
 #endif

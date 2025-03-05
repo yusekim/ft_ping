@@ -28,7 +28,7 @@ t_slist *slist_search(t_slist *head, int key)
 		return NULL;
 }
 
-void	slist_push_back(t_slist **head, int key)
+void slist_push_back(t_slist **head, int key)
 {
 	if (head == NULL)
 		return ;
@@ -58,7 +58,7 @@ void	slist_push_back(t_slist **head, int key)
 	}
 }
 
-void	slist_delete(t_slist **head, int key)
+void slist_delete(t_slist **head, int key)
 {
 	if (!head || !*head)
 		return ;
@@ -78,6 +78,17 @@ void	slist_delete(t_slist **head, int key)
 		return;
 	}
 	free(target);
+}
+
+void slist_free(t_slist *head)
+{
+	t_slist *temp;
+	while (head)
+	{
+		temp = head->level_ptrs[0];
+		free(head);
+		head = temp;
+	}
 }
 
 int randomlevel()

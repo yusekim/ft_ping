@@ -1,7 +1,7 @@
 #include "ft_ping.h"
 #include "parse.h"
 #include "strs.h"
-
+#include "exec.h"
 
 int main(int argc, char **argv)
 {

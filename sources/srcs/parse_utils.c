@@ -36,40 +36,6 @@ round-trip min/avg/max/stddev = 50.754/50.754/50.754/0.000 ms
 
 #include <unistd.h>
 
-void *info_free(t_ping_info *info, int is_perror)
-{
-	t_ping_info *temp;
-	if (is_perror)
-		perror("ft_ping");
-	while (info)
-	{
-		temp = info->next;
-		// slist_free(temp->packets); // TODO
-		if (info->pre_packets)
-			free(info->pre_packets);
-		free(info);
-		info = temp;
-	}
-	return NULL;
-}
-
-char *build_preload(int num, uint16_t id)
-{
-	char *packets = calloc(num, PACKET_SIZE * sizeof(char));
-	if (packets == NULL)
-		return NULL;
-	for (int i = 0; i < num; i++)
-	{
-		struct icmphdr *icmp = (struct icmphdr *)(packets + i * PACKET_SIZE);
-		icmp->type = ICMP_ECHO;
-		icmp->code = 0;
-		icmp->un.echo.id = id;
-		icmp->un.echo.sequence = i;
-		icmp->checksum = calculate_cksum((void *)icmp, PACKET_SIZE);
-	}
-	return packets;
-}
-
 char *is_ascii_number(char *str)
 {
 	size_t len = strlen(str);
@@ -88,60 +54,6 @@ char *is_ascii_number(char *str)
 	return NULL;
 }
 
-struct addrinfo *getdestinfo(char *hostname)
-{
-	struct addrinfo hints, *res;
-	int status = 0;
-
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_RAW;
-	hints.ai_protocol = IPPROTO_ICMP;
-	status = getaddrinfo(hostname, NULL, &hints, &res);
-	if (status != 0)
-	{
-		dprintf(STDERR_FILENO, "ft_ping: %s\n", gai_strerror(status));
-		return NULL;
-	}
-	return res;
-}
-
-void print_ping_info(t_ping_info *info, t_options *options)
-{
-	if (info == NULL)
-		return ;
-	char optstr[] = "v?flnwW";
-	char ipstr[INET_ADDRSTRLEN];
-	for (int i = 0; i < strlen(optstr); i++)
-	{
-		if (!(options->flags & (1 << i)))
-			optstr[i] = '.';
-	}
-	printf("\n===========ft_ping==============\n");
-	printf("options: [%s]\n", optstr);
-	if (optstr[3] != '.')
-		printf("\tpreload: %d\n", options->preload_num);
-	if (optstr[5] != '.')
-		printf("\ttimeout: %d\n", options->timeout);
-	if (optstr[6] != '.')
-		printf("\tttl value: %d\n", options->ttl_val);
-
-	int len = split_len(options->hosts);
-	if (len)
-		printf("\narguments:\n");
-	for (int i = 0; i < len; i++)
-	{
-		struct addrinfo	*p = info->dest_info;
-		struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
-		void *addr = &(ipv4->sin_addr);
-		inet_ntop(p->ai_family, addr, ipstr, sizeof(ipstr));
-		printf("\thostname[%d]: %s\n", i, options->hosts[i]);
-		printf("\tipaddr: %s\n", ipstr);
-		info = info->next;
-	}
-	printf("================================\n");
-}
-
 void print_option_info(t_options *options)
 {
 	char optstr[] = "v?clnwt";
@@ -152,6 +64,8 @@ void print_option_info(t_options *options)
 	}
 	printf("\n===========ft_ping==============\n");
 	printf("options: [%s]\n", optstr);
+	if (optstr[2] != '.')
+		printf("\tpacket count: %d\n", options->packets_count);
 	if (optstr[3] != '.')
 		printf("\tpreload: %d\n", options->preload_num);
 	if (optstr[5] != '.')
