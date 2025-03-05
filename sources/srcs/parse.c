@@ -71,7 +71,7 @@ void handle_options(t_options *options, char *arg, char ***argv)
 			break;
 		case '-':
 			options->flags |= TTL_FLAG;
-			if (get_ttl_val(options, &(arg[i]), &i)) // TODO
+			if (get_ttl_val(options, &(arg[i]), &i))
 				return;
 			break;
 		default:
@@ -82,7 +82,7 @@ void handle_options(t_options *options, char *arg, char ***argv)
 	}
 }
 
-int get_opt_val(t_options *options, char flag, char ***argv) // TODO : add -c option val
+int get_opt_val(t_options *options, char flag, char ***argv)
 {
 	++(*argv);
 	if (!*argv || !**argv)
