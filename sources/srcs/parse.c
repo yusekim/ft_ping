@@ -10,7 +10,7 @@
 // ping -cl 2 3 google.com -> 문제없어보이면 stdout
 // ping -w 0 8.8.8.8 -> stderr: "ping: option value too small: 0"
 
-int getoptions(int argc, char **argv, t_options *options)
+int getoptions(char **argv, t_options *options)
 {
 	char *arg;
 
@@ -34,12 +34,18 @@ int getoptions(int argc, char **argv, t_options *options)
 		dprintf(STDERR_FILENO, "ft_ping: missing host operand\n%s\n", INVALID_ARG_HELP_MSG);
 		return (EX_USAGE);
 	}
+	options->sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	if (options->sockfd < 0)
+	{
+		perror("ft_ping");
+		return 1;
+	}
 	return 0;
 }
 
 void handle_options(t_options *options, char *arg, char ***argv)
 {
-	size_t len = strlen(arg);
+	int len = strlen(arg);
 	for (int i = 1; i < len; i++)
 	{
 		switch (arg[i])
@@ -71,7 +77,7 @@ void handle_options(t_options *options, char *arg, char ***argv)
 			break;
 		case '-':
 			options->flags |= TTL_FLAG;
-			if (get_ttl_val(options, &(arg[i]), &i))
+			if (get_ttl_val(options, &(arg[i])))
 				return;
 			break;
 		default:
@@ -132,7 +138,7 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	return 0;
 }
 
-int get_ttl_val(t_options *options, char *flag, int *idx)
+int get_ttl_val(t_options *options, char *flag)
 {
 	if (strncmp("-ttl=", flag, 5))
 	{
@@ -162,4 +168,5 @@ int get_ttl_val(t_options *options, char *flag, int *idx)
 		return 1;
 	}
 	options->ttl_val = (uint8_t)value;
+	return 0;
 }

@@ -20,10 +20,10 @@
 
 # define INVALID_ARG_HELP_MSG "Try 'ping -?' for more information.\n"
 
-int				getoptions(int argc, char **argv, t_options *options);
+int				getoptions(char **argv, t_options *options);
 void			handle_options(t_options *t_options, char *arg, char ***argv);
 int				get_opt_val(t_options *options, char flag, char ***argv);
-int				get_ttl_val(t_options *options, char *flag, int *idx);
+int				get_ttl_val(t_options *options, char *flag);
 
 t_ping_info		*build_info(t_options *options, int len);
 

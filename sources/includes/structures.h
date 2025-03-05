@@ -11,7 +11,7 @@
 # include <string.h>
 # include <time.h>
 # include "strs.h"
-# include "utils.h"
+
 
 # define MAX_LEVEL 9
 # define PACKET_SIZE 64		// packet size(64bytes)
@@ -28,12 +28,13 @@ struct s_options
 	int				preload_num;
 	int				packets_count;
 	int				timeout;
+	int				sockfd;
 	uint8_t			ttl_val;
+	uint16_t		id;
 };
 
 struct s_ping_info
 {
-	int					sockfd;
 	struct addrinfo		*dest_info;			// needs to free
 	t_slist				*packets;
 	char				*pre_packets;

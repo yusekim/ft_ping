@@ -12,7 +12,7 @@ int main(int argc, char **argv)
 		dprintf(STDERR_FILENO, "ping: missing host operand\n%s", INVALID_ARG_HELP_MSG);
 		return (EX_USAGE);
 	}
-	int res = getoptions(argc, argv, &options);
+	int res = getoptions(argv, &options);
 	print_option_info(&options);
 	if (res != 0)
 		return (res);

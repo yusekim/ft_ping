@@ -3,6 +3,7 @@
 # include <stdlib.h>
 # include <unistd.h>
 # include "structures.h"
+# include "utils.h"
 
 # define V_FLAG (1 << 0)	// v(verbose) flag
 # define Q_FLAG (1 << 1)	// ?(usage) flag

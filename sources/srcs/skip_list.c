@@ -77,6 +77,11 @@ void slist_delete(t_slist **head, int key)
 		// TODO: handle the ping (DUP!) situation
 		return;
 	}
+	for (int level = 0; level <= MAX_LEVEL; level++)
+	{
+		if (prev_nodes[level]->level_ptrs[level] == target)
+			prev_nodes[level]->level_ptrs[level] = target->level_ptrs[level];
+	}
 	free(target);
 }
 
