@@ -40,6 +40,14 @@ int getoptions(char **argv, t_options *options)
 		perror("ft_ping");
 		return 1;
 	}
+	if (options->flags & TTL_FLAG)
+	{
+		if (setsockopt(options->sockfd, IPPROTO_IP, IP_TTL, &options->ttl_val, sizeof(uint8_t)) < 0)
+		{
+			perror("ft_ping");
+			return 1;
+		}
+	}
 	return 0;
 }
 

@@ -22,6 +22,7 @@ SRCS = ./srcs/main.c \
 		./srcs/strs_utils.c \
 		./srcs/exec.c \
 		./srcs/exec_utils.c \
+		./srcs/ping_signal.c \
 		./srcs/utils.c \
 		./srcs/skip_list.c
 OBJS = $(SRCS:.c=.o)

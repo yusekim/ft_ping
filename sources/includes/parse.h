@@ -29,6 +29,7 @@ t_ping_info		*build_info(t_options *options, int len);
 
 void			*info_free(t_ping_info *info, int is_perror);
 char			*build_preload(int num, uint16_t id);
+struct timespec	*build_preload_time(int num);
 char			*is_ascii_number(char *str);
 struct addrinfo	*getdestinfo(char *hostname);
 

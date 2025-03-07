@@ -16,6 +16,5 @@ int main(int argc, char **argv)
 	print_option_info(&options);
 	if (res != 0)
 		return (res);
-	srand48(time(NULL));
 	return(exec_ping(&options));
 }

@@ -5,6 +5,7 @@
 # include <arpa/inet.h>
 # include <sys/socket.h>
 # include <sys/types.h>
+# include <sys/time.h>
 # include <netinet/ip_icmp.h>
 # include <netdb.h>
 # include <sysexits.h>
@@ -38,16 +39,18 @@ struct s_ping_info
 	struct addrinfo		*dest_info;			// needs to free
 	t_slist				*packets;
 	char				*pre_packets;
+	struct timespec		*pre_packets_time;
 	int					dup_sum;
 	struct s_ping_info	*next;
 };
 
 struct s_slist
 {
-	int						val;
+	int						val;			// seq number
 	int						level;
 	int						dup_cnt;
 	char					packet[64];
+	struct timespec			timeinfo;
 	struct s_slist			*level_ptrs[MAX_LEVEL + 1];
 };
 
