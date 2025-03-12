@@ -17,12 +17,18 @@ void signal_dfl(void)
 	signal(SIGINT, SIG_DFL);
 }
 
-void set_signo(void)
+void on_signo(void)
 {
 	g_status = 1;
+}
+
+void off_signo(void)
+{
+	g_status = 0;
 }
 
 int get_signo(void)
 {
 	return g_status;
 }
+

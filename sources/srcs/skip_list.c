@@ -6,37 +6,35 @@ t_slist *slist_search(t_slist *head, int key)
 {
 	if (head == NULL)
 		return NULL;
-	t_slist *trav = head;
-	while (trav && trav->val < key)
+	t_slist *current = head;
+	int start_level = head->level;
+	for (int i = start_level; i >= 0; i--)
 	{
-		int level = trav->level;
-		while (level)
+		while (current->level_ptrs[i] != NULL && \
+				current->level_ptrs[i] != nodes_to_null[i] && \
+				current->level_ptrs[i]->val < key)
 		{
-			if (trav->level_ptrs[level]->val <= key)
-			{
-				trav = trav->level_ptrs[level];
-				break;
-			}
-			level--;
+			current = current->level_ptrs[i];
 		}
-		if (level == 0)
-			trav = trav->level_ptrs[level];
+
 	}
-	if (trav && trav->val == key)
-		return trav;
+	current = current->level_ptrs[0];
+	if (current != NULL && current->val == key)
+		return current;
 	else
 		return NULL;
 }
 
-void slist_push_back(t_slist **head, int key)
+t_slist *slist_push_back(t_slist **head, int key)
 {
 	if (head == NULL)
-		return ;
-	else if (*head == NULL)
+		return NULL;
+
+	if (*head == NULL)
 	{
 		t_slist *new_head = malloc(sizeof(t_slist));
 		if (!new_head)
-			return ;
+			return NULL;
 		new_head->val = -1;
 		new_head->level = MAX_LEVEL;
 		for (int i = 0; i <= MAX_LEVEL; i++)
@@ -46,9 +44,11 @@ void slist_push_back(t_slist **head, int key)
 		}
 		*head = new_head;
 	}
-	t_slist *new_node = malloc(sizeof(t_slist));
+
+	t_slist *new_node = calloc(1, sizeof(t_slist));
 	if (!new_node)
-		return ;
+		return NULL;
+
 	new_node->val = key;
 	new_node->level = randomlevel();
 	for (int level = new_node->level; level >= 0; level--)
@@ -56,7 +56,11 @@ void slist_push_back(t_slist **head, int key)
 		nodes_to_null[level]->level_ptrs[level] = new_node;
 		nodes_to_null[level] = new_node;
 	}
+	clock_gettime(CLOCK_MONOTONIC, &new_node->senttime);
+
+	return new_node;
 }
+
 
 void slist_delete(t_slist **head, int key)
 {

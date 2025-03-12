@@ -15,7 +15,7 @@ LINE_CLEAR  =   "\x1b[1A\x1b[M"
 
 NAME = ft_ping
 CC = cc
-CFLAGS = -I $(HEADERS_DIR) -Wall -Wextra -Werror
+CFLAGS = -I $(HEADERS_DIR) #-Wall -Wextra -Werror
 SRCS = ./srcs/main.c \
 		./srcs/parse.c \
 		./srcs/parse_utils.c \

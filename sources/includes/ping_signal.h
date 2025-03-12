@@ -5,6 +5,7 @@
 void	sig_handler(int signo);
 void	signal_ign(void);
 void	signal_dfl(void);
-void	set_signo(void);
+void	on_signo(void);
+void	off_signo(void);
 int		get_signo(void);
 #endif

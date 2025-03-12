@@ -48,6 +48,7 @@ int getoptions(char **argv, t_options *options)
 			return 1;
 		}
 	}
+	options->id = getpid();
 	return 0;
 }
 

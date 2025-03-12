@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     }
 
     int sequence = 0;
-    for (int i = 0; i < 10; i++) {
+    while(1) {
         // 루프 시작 시각 기록 (1초 간격을 맞추기 위해)
         struct timespec start_time, current_time;
         clock_gettime(CLOCK_MONOTONIC, &start_time);

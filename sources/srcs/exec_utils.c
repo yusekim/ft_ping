@@ -33,6 +33,14 @@ char *build_preload(int num, uint16_t id)
 	return packets;
 }
 
+int ping_exit(t_options *options, t_ping_info *info, int code)
+{
+	info_free(info, code);
+	split_free(options->hosts);
+	close(options->sockfd);
+	return 1;
+}
+
 struct timespec *build_preload_time(int num)
 {
 	struct timespec *timeinfo = calloc(num, sizeof(struct timespec));
@@ -56,5 +64,13 @@ struct addrinfo *getdestinfo(char *hostname)
 		dprintf(STDERR_FILENO, "ft_ping: unknown host\n");
 		return NULL;
 	}
+	return res;
+}
+
+
+double timespec_diff(struct timespec start, struct timespec end)
+{
+	double res = (end.tv_sec - start.tv_sec) * 1000.0;
+	res += (end.tv_nsec - start.tv_nsec) / 1000000.0;
 	return res;
 }
