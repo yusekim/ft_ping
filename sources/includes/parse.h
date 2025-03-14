@@ -2,7 +2,7 @@
 # define PARSE_H
 # include "structures.h"
 
-# define PING_USAGE "Usage: ping [OPTION...] HOST ...\n" \
+# define PING_USAGE "Usage: ft_ping [OPTION...] HOST ...\n" \
 "\n" \
 " Options valid for all request types:\n" \
 "  -v, verbose                verbose output\n" \
@@ -23,7 +23,7 @@
 int				getoptions(char **argv, t_options *options);
 void			handle_options(t_options *t_options, char *arg, char ***argv);
 int				get_opt_val(t_options *options, char flag, char ***argv);
-int				get_ttl_val(t_options *options, char *flag);
+void			get_ttl_val(t_options *options, char *flag);
 
 t_ping_info		*build_info(t_options *options, int len);
 

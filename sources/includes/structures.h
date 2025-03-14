@@ -15,11 +15,12 @@
 
 
 # define MAX_LEVEL 9
-# define PACKET_SIZE 64		// packet size(64bytes)
-
+# define PACKET_SIZE 64
+# define IPHDR_SIZE 20
 typedef struct s_options				t_options;
 typedef struct s_ping_info				t_ping_info;
 typedef struct s_slist					t_slist;
+typedef struct s_stat					t_stat;
 
 struct s_options
 {
@@ -40,7 +41,6 @@ struct s_ping_info
 	t_slist				*packets;
 	char				*pre_packets;
 	struct timespec		*pre_packets_time;
-	int					dup_sum;
 	struct s_ping_info	*next;
 };
 
@@ -48,11 +48,23 @@ struct s_slist
 {
 	int						val;			// seq number
 	int						level;
-	int						dup_cnt;
+	int						is_received;
 	char					packet[64];
 	struct timespec			senttime;
 	double					time_taken_ms;
 	struct s_slist			*level_ptrs[MAX_LEVEL + 1];
+};
+
+struct s_stat
+{
+	int					sent;
+	int					recved;
+	int					dup_count;
+	double				min;
+	double				avg;
+	double				max;
+	double				stddev;
+
 };
 
 t_slist			*slist_search(t_slist *head, int key);

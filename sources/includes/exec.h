@@ -1,10 +1,11 @@
 #ifndef EXEC_H
 # define EXEC_H
 # include "structures.h"
+# include <errno.h>
 
 int				exec_ping(t_options *options);
 t_ping_info		*build_info(t_options *options, int idx);
-int 			sendpacket(t_options *options, t_ping_info *info, struct timespec *now, uint16_t *seqnum);
+int 			sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *prev, uint16_t *seqnum);
 
 void			*info_free(t_ping_info *info, int is_perror);
 struct addrinfo	*getdestinfo(char *hostname);

@@ -1,10 +1,13 @@
 #include "ft_ping.h"
 #include "exec.h"
 
+
 void *info_free(t_ping_info *info, int is_perror)
 {
 	if (is_perror)
 		perror("ft_ping");
+	if (!info)
+		return NULL;
 	slist_free(info->packets);
 	if (info->pre_packets)
 		free(info->pre_packets);
@@ -38,7 +41,7 @@ int ping_exit(t_options *options, t_ping_info *info, int code)
 	info_free(info, code);
 	split_free(options->hosts);
 	close(options->sockfd);
-	return 1;
+	return code;
 }
 
 struct timespec *build_preload_time(int num)
@@ -66,7 +69,6 @@ struct addrinfo *getdestinfo(char *hostname)
 	}
 	return res;
 }
-
 
 double timespec_diff(struct timespec start, struct timespec end)
 {

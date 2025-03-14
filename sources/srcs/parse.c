@@ -86,9 +86,8 @@ void handle_options(t_options *options, char *arg, char ***argv)
 			break;
 		case '-':
 			options->flags |= TTL_FLAG;
-			if (get_ttl_val(options, &(arg[i])))
-				return;
-			break;
+			get_ttl_val(options, &(arg[i]));
+			return;
 		default:
 			options->flags |= INVALID_F;
 			dprintf(STDERR_FILENO, "%s option -- '%c'\n%s", INVALID_MSG, arg[i], INVALID_ARG_HELP_MSG);
@@ -147,13 +146,13 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	return 0;
 }
 
-int get_ttl_val(t_options *options, char *flag)
+void get_ttl_val(t_options *options, char *flag)
 {
 	if (strncmp("-ttl=", flag, 5))
 	{
 		options->flags |= Q_FLAG | INVALID_F;
-		dprintf(STDERR_FILENO, "ping: ping: unrecognized option '-%s'\n%s\n", flag, INVALID_ARG_HELP_MSG);
-		return 1;
+		dprintf(STDERR_FILENO, "ft_ping: unrecognized option '-%s'\n%s\n", flag, INVALID_ARG_HELP_MSG);
+		return;
 	}
 	flag += 5;
 	char *check = is_ascii_number(flag);
@@ -161,21 +160,20 @@ int get_ttl_val(t_options *options, char *flag)
 	{
 		options->flags |= INVALID_F;
 		dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_MSG, flag, check);
-		return 1;
+		return;
 	}
 	int value = atoi(flag);
 	if (value < 0 || value > UINT8_MAX)
 	{
 		options->flags |= INVALID_F;
 		dprintf(STDERR_FILENO, "ft_ping: option value too big: %s\n", flag);
-		return 1;
 	}
 	else if (value == 0)
 	{
 		options->flags |= INVALID_F;
 		dprintf(STDERR_FILENO, "ft_ping: option value too small: %s\n", flag);
-		return 1;
 	}
-	options->ttl_val = (uint8_t)value;
-	return 0;
+	else
+		options->ttl_val = (uint8_t)value;
+	return;
 }
