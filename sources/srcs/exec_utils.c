@@ -1,6 +1,6 @@
 #include "ft_ping.h"
 #include "exec.h"
-
+#include <float.h>
 
 void *info_free(t_ping_info *info, int is_perror)
 {
@@ -17,6 +17,24 @@ void *info_free(t_ping_info *info, int is_perror)
 		freeaddrinfo(info->dest_info);
 	free(info);
 	return NULL;
+}
+
+struct addrinfo *getdestinfo(char *hostname)
+{
+	struct addrinfo hints, *res;
+	int status = 0;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_RAW;
+	hints.ai_protocol = IPPROTO_ICMP;
+	status = getaddrinfo(hostname, NULL, &hints, &res);
+	if (status != 0)
+	{
+		dprintf(STDERR_FILENO, "ft_ping: unknown host\n");
+		return NULL;
+	}
+	return res;
 }
 
 char *build_preload(int num, uint16_t id)
@@ -36,14 +54,6 @@ char *build_preload(int num, uint16_t id)
 	return packets;
 }
 
-int ping_exit(t_options *options, t_ping_info *info, int code)
-{
-	info_free(info, code);
-	split_free(options->hosts);
-	close(options->sockfd);
-	return code;
-}
-
 struct timespec *build_preload_time(int num)
 {
 	struct timespec *timeinfo = calloc(num, sizeof(struct timespec));
@@ -52,22 +62,19 @@ struct timespec *build_preload_time(int num)
 	return timeinfo;
 }
 
-struct addrinfo *getdestinfo(char *hostname)
+int ping_exit(t_options *options, t_ping_info *info, int code)
 {
-	struct addrinfo hints, *res;
-	int status = 0;
+	info_free(info, code);
+	split_free(options->hosts);
+	close(options->sockfd);
+	return code;
+}
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_RAW;
-	hints.ai_protocol = IPPROTO_ICMP;
-	status = getaddrinfo(hostname, NULL, &hints, &res);
-	if (status != 0)
-	{
-		dprintf(STDERR_FILENO, "ft_ping: unknown host\n");
-		return NULL;
-	}
-	return res;
+void set_stat(t_stat *stat)
+{
+	memset(stat, 0, sizeof(t_stat));
+	stat->min = DBL_MAX;
+	stat->max = DBL_MIN;
 }
 
 double timespec_diff(struct timespec start, struct timespec end)

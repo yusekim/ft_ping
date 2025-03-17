@@ -61,10 +61,8 @@ struct s_stat
 	int					recved;
 	int					dup_count;
 	double				min;
-	double				avg;
+	double				sum;
 	double				max;
-	double				stddev;
-
 };
 
 t_slist			*slist_search(t_slist *head, int key);
