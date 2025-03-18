@@ -28,10 +28,10 @@ struct s_options
 	char			**hosts;
 	int				hosts_num;
 	int				preload_num;
-	int				packets_count;
 	int				timeout;
 	int				sockfd;
 	uint8_t			ttl_val;
+	uint16_t		packets_count;
 	uint16_t		id;
 };
 

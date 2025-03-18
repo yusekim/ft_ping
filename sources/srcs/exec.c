@@ -10,7 +10,6 @@ int exec_ping(t_options *options)
 	t_ping_info *info;
 	struct timespec now, timeout;
 	fd_set readfds;
-	uint16_t seqnum = 0;
 
 	signal(SIGINT, sig_handler);
 	timeout.tv_nsec = 50000000L;
@@ -20,7 +19,8 @@ int exec_ping(t_options *options)
 		info = build_info(options, i);
 		if (!info)
 			ping_exit(options, info, 1);
-		// send_preloads(info); // TODO
+		uint16_t seqnum = 0;
+		t_stat stat;
 		if (get_signo() == 0)
 			clock_gettime(CLOCK_MONOTONIC, &now);
 		struct sockaddr_in *addr = (struct sockaddr_in *)info->dest_info->ai_addr;
@@ -29,7 +29,6 @@ int exec_ping(t_options *options)
 		if (options->flags & V_FLAG)
 			dprintf(STDOUT_FILENO, ", id 0x%x = %d", options->id, options->id);
 		dprintf(STDOUT_FILENO, "\n");
-		t_stat stat;
 		set_stat(&stat);
 		while(1)
 		{
@@ -51,6 +50,7 @@ int exec_ping(t_options *options)
 				ssize_t recvlen = recvfrom(options->sockfd, recvbuf, 1023, 0, NULL, NULL);
 				struct iphdr *ip = (struct iphdr *)recvbuf;
 				struct icmphdr *icmprecv = (struct icmphdr *)(recvbuf + (ip->ihl * 4));
+				uint16_t recved_seqnum;
 				if (icmprecv->type == ICMP_TIMXCEED)
 				{
 					dprintf(STDOUT_FILENO, "%d bytes from %s: Time to live exceeded\n", recvlen - IPHDR_SIZE, ipstr);
@@ -62,7 +62,8 @@ int exec_ping(t_options *options)
 						for (int i = 0; i < 10; i++)
 							dprintf(STDOUT_FILENO, " %04x", ntohs(*(dump + i)), ntohs(*(dump + i)));
 						dprintf(STDOUT_FILENO, HDR_DUMP_MSG);
-
+						struct icmphdr *sent_packet = (struct icmphdr *)(recvbuf + (ip->ihl * 4) + 8);
+						recved_seqnum = ntohs(sent_packet->un.echo.sequence);
 					}
 				}
 				else if (icmprecv->type == ICMP_ECHOREPLY && calculate_cksum((void *)icmprecv, PACKET_SIZE) == 0)
@@ -72,7 +73,8 @@ int exec_ping(t_options *options)
 					clock_gettime(CLOCK_MONOTONIC, &recvnow);
 					t_slist *node = slist_search(info->packets, ntohs(icmprecv->un.echo.sequence));
 					node->time_taken_ms = timespec_diff(node->senttime, recvnow);
-					dprintf(STDOUT_FILENO, "%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms", recvlen - IPHDR_SIZE, ipstr, ntohs(icmprecv->un.echo.sequence), ip->ttl, node->time_taken_ms);
+					recved_seqnum = ntohs(icmprecv->un.echo.sequence);
+					dprintf(STDOUT_FILENO, "%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms", recvlen - IPHDR_SIZE, ipstr, recved_seqnum, ip->ttl, node->time_taken_ms);
 					if (node->is_received)
 					{
 						dprintf(STDOUT_FILENO, " (DUP!)");
@@ -87,6 +89,8 @@ int exec_ping(t_options *options)
 					node->is_received = 1;
 					memset(recvbuf, 0, 1024);
 				}
+				if (options->flags & C_FLAG && recved_seqnum == options->packets_count - 1)
+					break ;
 			}
 		}
 		dprintf(STDOUT_FILENO, "--- %s ft_ping: statistics ---\n", options->hosts[i]);
