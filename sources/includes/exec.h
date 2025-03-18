@@ -13,9 +13,8 @@ int 			sendpacket(int idx, t_options *options, t_ping_info *info, struct timespe
 
 void			*info_free(t_ping_info *info, int is_perror);
 struct addrinfo	*getdestinfo(char *hostname);
-char			*build_preload(int num, uint16_t id);
-struct timespec	*build_preload_time(int num);
 int				ping_exit(t_options *options, t_ping_info *info, int code);
+void			print_verbose(char *icmprecv);
 double 			timespec_diff(struct timespec start, struct timespec end);
 void			set_stat(t_stat *stat);
 void			print_stats(t_slist *head, t_stat *stat);

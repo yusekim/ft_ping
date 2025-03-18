@@ -27,11 +27,11 @@ struct s_options
 	unsigned char	flags;
 	char			**hosts;
 	int				hosts_num;
-	int				preload_num;
-	int				timeout;
 	int				sockfd;
+	uint16_t		timeout;
 	uint8_t			ttl_val;
 	uint16_t		packets_count;
+	uint16_t		linger;
 	uint16_t		id;
 };
 
@@ -39,9 +39,7 @@ struct s_ping_info
 {
 	struct addrinfo		*dest_info;			// needs to free
 	t_slist				*packets;
-	char				*pre_packets;
-	struct timespec		*pre_packets_time;
-	struct s_ping_info	*next;
+	uint16_t			count;
 };
 
 struct s_slist

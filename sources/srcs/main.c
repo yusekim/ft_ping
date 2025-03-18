@@ -13,8 +13,8 @@ int main(int argc, char **argv)
 		return (EX_USAGE);
 	}
 	int res = getoptions(argv, &options);
-	print_option_info(&options);
-	if (res != 0)
+	// print_option_info(&options);
+	if (res != 0 || options.flags & Q_FLAG)
 		return (res);
 	return(exec_ping(&options));
 }

@@ -49,6 +49,8 @@ int getoptions(char **argv, t_options *options)
 		}
 	}
 	options->id = getpid();
+	if (!(options->flags & CW_FLAG))
+		options->linger = MAX_WAIT;
 	return 0;
 }
 
@@ -74,8 +76,8 @@ void handle_options(t_options *options, char *arg, char ***argv)
 		case 'n':
 			options->flags |= N_FLAG;
 			break;
-		case 'l':
-			options->flags |= L_FLAG;
+		case 'W':
+			options->flags |= CW_FLAG;
 			if (get_opt_val(options, arg[i], argv))
 				return;
 			break;
@@ -119,13 +121,10 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	if (value < 0 || value > INT32_MAX)
 	{
 		options->flags |= INVALID_F;
-		if (flag == 'l')
-			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_MSG, **argv);
-		else
-			dprintf(STDERR_FILENO, "ft_ping: option value too big: %s\n", **argv);
+		dprintf(STDERR_FILENO, "ft_ping: option value too big: %s\n", **argv);
 		return 1;
 	}
-	else if (value == 0 && flag == 'w')
+	else if (value == 0)
 	{
 		options->flags |= INVALID_F;
 		dprintf(STDERR_FILENO, "ft_ping: option value too small: %s\n", **argv);
@@ -134,14 +133,14 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 
 	switch (flag)
 	{
-	case 'l':
-		options->preload_num = (int)value;
+	case 'W':
+		options->linger = (uint16_t)value;
 		break;
 	case 'w':
-		options->timeout = (int)value;
+		options->timeout = (uint16_t)value;
 		break;
 	case 'c':
-		options->packets_count = (int)value;
+		options->packets_count = (uint16_t)value;
 	}
 	return 0;
 }
