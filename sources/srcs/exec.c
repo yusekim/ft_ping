@@ -12,7 +12,7 @@ int exec_ping(t_options *options)
 	fd_set readfds;
 
 	signal(SIGINT, sig_handler);
-	ps_timeout.tv_nsec = 20000000L;
+	ps_timeout.tv_nsec = 50000000L;
 	ps_timeout.tv_sec = 0;
 	for (int i = 0; i < len; i++)
 	{
@@ -65,7 +65,7 @@ int exec_ping(t_options *options)
 					if (options->flags & V_FLAG)
 						print_verbose((char *)icmprecv);
 				}
-				else if (icmprecv->type == ICMP_ECHOREPLY && calculate_cksum((void *)icmprecv, PACKET_SIZE) == 0)
+				else if (icmprecv->type == ICMP_ECHOREPLY && calculate_cksum((void *)icmprecv, recvlen - IPHDR_SIZE) == 0)
 				{
 					struct timespec recvnow;
 					clock_gettime(CLOCK_MONOTONIC, &recvnow);
@@ -82,7 +82,7 @@ int exec_ping(t_options *options)
 							recved_seqnum,
 							ip->ttl,
 							node->time_taken_ms);
-							
+
 					if (node->is_received)
 					{
 						dprintf(STDOUT_FILENO, " (DUP!)");

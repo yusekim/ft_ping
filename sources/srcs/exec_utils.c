@@ -50,11 +50,9 @@ void set_stat(t_stat *stat)
 
 void print_verbose(char *icmprecv)
 {
-	// 외부 ICMP 헤더 바로 뒤에 있는 원본 IP 헤더를 가져옴.
 	struct iphdr *orig_ip = (struct iphdr *)((char *)icmprecv + sizeof(struct icmphdr));
 	uint16_t *dump = (uint16_t *)orig_ip;
 
-	// 20바이트(10워드)의 원본 IP 헤더 dump 출력
 	dprintf(STDOUT_FILENO, "IP Hdr Dump:\n");
 	for (int i = 0; i < 10; i++)
 		dprintf(STDOUT_FILENO, " %04x", ntohs(dump[i]));

@@ -61,34 +61,6 @@ t_slist *slist_push_back(t_slist **head, int key)
 	return new_node;
 }
 
-
-void slist_delete(t_slist **head, int key)
-{
-	if (!head || !*head)
-		return ;
-	t_slist *prev_nodes[MAX_LEVEL + 1] = {0};
-	t_slist *current = *head;
-
-	for (int level = MAX_LEVEL; level >= 0; level--)
-	{
-		while (current->level_ptrs[level] && current->level_ptrs[level]->val < key)
-			current = current->level_ptrs[level];
-		prev_nodes[level] = current;
-	}
-	t_slist *target = current->level_ptrs[0];
-	if (!target || target->val != key)
-	{
-		// TODO: handle the ping (DUP!) situation
-		return;
-	}
-	for (int level = 0; level <= MAX_LEVEL; level++)
-	{
-		if (prev_nodes[level]->level_ptrs[level] == target)
-			prev_nodes[level]->level_ptrs[level] = target->level_ptrs[level];
-	}
-	free(target);
-}
-
 void slist_free(t_slist *head)
 {
 	t_slist *temp;

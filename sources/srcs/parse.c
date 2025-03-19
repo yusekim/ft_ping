@@ -2,14 +2,6 @@
 #include "parse.h"
 #include "strs.h"
 
-// ping -> stderr
-// ping -Z -> stderr
-// ping -?Z google.com -> stdout
-// ping -Z? google.com -> stderr
-// ping -QZ google.com -> stderr
-// ping -cl 2 3 google.com -> 문제없어보이면 stdout
-// ping -w 0 8.8.8.8 -> stderr: "ping: option value too small: 0"
-
 int getoptions(char **argv, t_options *options)
 {
 	char *arg;
@@ -91,7 +83,7 @@ void handle_options(t_options *options, char *arg, char ***argv)
 			get_ttl_val(options, &(arg[i]));
 			return;
 		default:
-			options->flags |= INVALID_F;
+			options->flags |= INVALID_F | Q_FLAG;
 			dprintf(STDERR_FILENO, "%s option -- '%c'\n%s", INVALID_MSG, arg[i], INVALID_ARG_HELP_MSG);
 			return;
 		}
@@ -120,6 +112,11 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	long value = atol(**argv);
 	if (value < 0 || value > INT32_MAX)
 	{
+		if (flag == 'c')
+		{
+			options->flags ^ C_FLAG;
+			return 0;
+		}
 		options->flags |= INVALID_F;
 		dprintf(STDERR_FILENO, "ft_ping: option value too big: %s\n", **argv);
 		return 1;
@@ -134,10 +131,10 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	switch (flag)
 	{
 	case 'W':
-		options->linger = (uint16_t)value;
+		options->linger = (int)value;
 		break;
 	case 'w':
-		options->timeout = (uint16_t)value;
+		options->timeout = (int)value;
 		break;
 	case 'c':
 		options->packets_count = (uint16_t)value;
