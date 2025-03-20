@@ -35,9 +35,11 @@ int exec_ping(t_options *options)
 		{
 			if (sendpacket(i, options, info, &now, &seqnum, &stat) < 0)
 				break;
+			clock_gettime(CLOCK_MONOTONIC_COARSE, &w_now);
+			if (check_ping_expired(options, info, &w_now))
+				break;
 			if (options->flags & W_FLAG)
 			{
-				clock_gettime(CLOCK_MONOTONIC_COARSE, &w_now);
 				if (timespec_diff(w_timeout, w_now) / 1000 > options->timeout)
 					break;
 			}
@@ -60,21 +62,24 @@ int exec_ping(t_options *options)
 				if (icmprecv->type == ICMP_TIMXCEED)
 				{
 					dprintf(STDOUT_FILENO, "%d bytes from %s: Time to live exceeded\n", recvlen - IPHDR_SIZE, ipstr);
-					struct icmphdr *sent_packet = (struct icmphdr *)((char *)icmprecv + 8);
-					recved_seqnum = ntohs(sent_packet->un.echo.sequence);
+					struct iphdr *itn_hdr = (struct iphdr *)((char *)icmprecv + sizeof(struct icmphdr));
+					struct icmphdr *sent_icmp = (struct icmphdr *)((char *)itn_hdr + (itn_hdr->ihl * 4));
+					t_slist *node = slist_search(info->packets, sent_icmp->un.echo.sequence);
+					if (node == NULL)
+						break;
+					node->is_received = 1;
 					if (options->flags & V_FLAG)
-						print_verbose((char *)icmprecv);
+						print_verbose(itn_hdr, sent_icmp);
 				}
 				else if (icmprecv->type == ICMP_ECHOREPLY && calculate_cksum((void *)icmprecv, recvlen - IPHDR_SIZE) == 0)
 				{
 					struct timespec recvnow;
 					clock_gettime(CLOCK_MONOTONIC, &recvnow);
 					t_slist *node = slist_search(info->packets, ntohs(icmprecv->un.echo.sequence));
+					if (node == NULL)
+						continue;
 					node->time_taken_ms = timespec_diff(node->senttime, recvnow);
-					if ((uint16_t)(node->time_taken_ms) / 1000 > options->linger)
-						continue ;
 					stat.recved++;
-					if (node->time_taken_ms > options->linger)
 					recved_seqnum = ntohs(icmprecv->un.echo.sequence);
 					dprintf(STDOUT_FILENO, "%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms",
 							recvlen - IPHDR_SIZE,
@@ -97,12 +102,6 @@ int exec_ping(t_options *options)
 					node->is_received = 1;
 					memset(recvbuf, 0, 1024);
 				}
-				if (options->flags & C_FLAG)
-				{
-					info->count--;
-					if (info->count == 0)
-						break ;
-				}
 			}
 		}
 		dprintf(STDOUT_FILENO, "--- %s ft_ping: statistics ---\n", options->hosts[i]);
@@ -118,6 +117,8 @@ int sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *
 	clock_gettime(CLOCK_MONOTONIC, &now);
 	if (prev->tv_sec != 0 && timespec_diff(*prev, now) < 1000.0)
 		return 0;
+	if (options->flags & C_FLAG && info->count == 0)
+		return 0;
 	t_slist *newnode = slist_push_back(&info->packets, *seqnum);
 	char packet[PACKET_SIZE] = {0};
 	struct icmphdr *icmp = (struct icmphdr *)(packet);
@@ -130,6 +131,7 @@ int sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *
 	if (sendto(options->sockfd, packet, PACKET_SIZE, 0, info->dest_info->ai_addr, info->dest_info->ai_addrlen) < 0)
 		ping_exit(options, info, 1);
 	stat->sent++;
+	info->count--;
 	clock_gettime(CLOCK_MONOTONIC, prev);
 	if (get_signo())
 	{
@@ -138,6 +140,31 @@ int sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *
 	}
 	return 0;
 }
+
+int check_ping_expired(t_options *options, t_ping_info *info, struct timespec *now)
+{
+	t_slist **head = &info->packets;
+	t_slist *node = (*head)->level_ptrs[0];
+	int timeout = MAX_WAIT, waiting = 0;
+	if (options->flags & CW_FLAG)
+		timeout = options->linger;
+	while (node)
+	{
+		if (!node->is_received)
+		{
+			if ((int)timespec_diff(node->senttime, *now) / 1000 > timeout)
+				slist_delete(head, node->val);
+			else
+				waiting++;
+		}
+		node = node->level_ptrs[0];
+	}
+	if (options->flags & C_FLAG && info->count == 0 && waiting == 0)
+		return 1;
+	return 0;
+}
+
+
 
 t_ping_info *build_info(t_options *options, int idx)
 {

@@ -65,6 +65,7 @@ struct s_stat
 
 t_slist			*slist_search(t_slist *head, int key);
 t_slist			*slist_push_back(t_slist **head, int key);
+void			slist_delete(t_slist **head, int key);
 void			slist_free(t_slist *head);
 int				randomlevel();
 

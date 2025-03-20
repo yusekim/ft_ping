@@ -48,10 +48,9 @@ void set_stat(t_stat *stat)
 	stat->max = DBL_MIN;
 }
 
-void print_verbose(char *icmprecv)
+void print_verbose(struct iphdr *int_hdr, struct icmphdr *sent_icmp)
 {
-	struct iphdr *orig_ip = (struct iphdr *)((char *)icmprecv + sizeof(struct icmphdr));
-	uint16_t *dump = (uint16_t *)orig_ip;
+	uint16_t *dump = (uint16_t *)int_hdr;
 
 	dprintf(STDOUT_FILENO, "IP Hdr Dump:\n");
 	for (int i = 0; i < 10; i++)
@@ -59,22 +58,22 @@ void print_verbose(char *icmprecv)
 	dprintf(STDOUT_FILENO, "\n" HDR_DUMP_MSG);
 
 	// 원본 IP 헤더 필드 파싱
-	int version = orig_ip->version;
-	int ihl = orig_ip->ihl;
-	int tos = orig_ip->tos;
-	uint16_t tot_len = ntohs(orig_ip->tot_len);
-	uint16_t id = ntohs(orig_ip->id);
-	uint16_t frag = ntohs(orig_ip->frag_off);
+	int version = int_hdr->version;
+	int ihl = int_hdr->ihl;
+	int tos = int_hdr->tos;
+	uint16_t tot_len = ntohs(int_hdr->tot_len);
+	uint16_t id = ntohs(int_hdr->id);
+	uint16_t frag = ntohs(int_hdr->frag_off);
 	int flags = frag >> 13;
 	int frag_off = frag & 0x1fff;
-	int ttl = orig_ip->ttl;
-	int protocol = orig_ip->protocol;
-	uint16_t checksum = ntohs(orig_ip->check);
+	int ttl = int_hdr->ttl;
+	int protocol = int_hdr->protocol;
+	uint16_t checksum = ntohs(int_hdr->check);
 
 	struct in_addr src, dst;
 	char src_str[INET_ADDRSTRLEN], dst_str[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &(orig_ip->saddr), src_str, INET_ADDRSTRLEN);
-	inet_ntop(AF_INET, &(orig_ip->daddr), dst_str, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(int_hdr->saddr), src_str, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(int_hdr->daddr), dst_str, INET_ADDRSTRLEN);
 
 	dprintf(STDOUT_FILENO,
 		" %d  %d  %02x %04x %04x   %d %04x  %02x  %02x %04x %s  %s\n",
@@ -91,16 +90,13 @@ void print_verbose(char *icmprecv)
 		src_str,  // Source IP (예: 192.168.64.3)
 		dst_str); // Destination IP (예: 142.250.206.206)
 
-	// 원본 IP 헤더 뒤에 오는 원본 ICMP 헤더를 정확하게 얻음.
-	struct icmphdr *orig_icmp = (struct icmphdr *)((char *)orig_ip + (ihl * 4));
-	int icmp_type = orig_icmp->type;
-	int icmp_code = orig_icmp->code;
-	// 원본 ICMP 패킷의 크기는 원본 전체 IP 길이에서 IP 헤더 크기를 뺀 값 (보통 56바이트 또는 64바이트)
+	int icmp_type = sent_icmp->type;
+	int icmp_code = sent_icmp->code;
 	int icmp_size = tot_len - (ihl * 4);
 
 	dprintf(STDOUT_FILENO,
 		"ICMP: type %d, code %d, size %d, id 0x%04x, seq 0x%04x\n",
-		icmp_type, icmp_code, icmp_size, ntohs(orig_icmp->un.echo.id), ntohs(orig_icmp->un.echo.sequence));
+		icmp_type, icmp_code, icmp_size, ntohs(sent_icmp->un.echo.id), ntohs(sent_icmp->un.echo.sequence));
 }
 
 
