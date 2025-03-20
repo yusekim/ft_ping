@@ -32,6 +32,11 @@ int getoptions(char **argv, t_options *options)
 		perror("ft_ping");
 		return 1;
 	}
+	int optval = 1;
+	if (setsockopt(options->sockfd, SOL_SOCKET, SO_BROADCAST, &optval, sizeof(optval)) < 0) {
+		perror("ft_ping");
+		return 1;
+	}
 	if (options->flags & TTL_FLAG)
 	{
 		if (setsockopt(options->sockfd, IPPROTO_IP, IP_TTL, &options->ttl_val, sizeof(uint8_t)) < 0)
@@ -114,7 +119,7 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	{
 		if (flag == 'c')
 		{
-			options->flags ^ C_FLAG;
+			options->flags ^= C_FLAG;
 			return 0;
 		}
 		options->flags |= INVALID_F;
@@ -173,3 +178,4 @@ void get_ttl_val(t_options *options, char *flag)
 		options->ttl_val = (uint8_t)value;
 	return;
 }
+

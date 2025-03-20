@@ -48,32 +48,30 @@ void set_stat(t_stat *stat)
 	stat->max = DBL_MIN;
 }
 
-void print_verbose(struct iphdr *int_hdr, struct icmphdr *sent_icmp)
+void print_verbose(struct iphdr *ip_hdr, struct icmphdr *sent_icmp)
 {
-	uint16_t *dump = (uint16_t *)int_hdr;
+	uint16_t *dump = (uint16_t *)ip_hdr;
 
 	dprintf(STDOUT_FILENO, "IP Hdr Dump:\n");
 	for (int i = 0; i < 10; i++)
 		dprintf(STDOUT_FILENO, " %04x", ntohs(dump[i]));
-	dprintf(STDOUT_FILENO, "\n" HDR_DUMP_MSG);
+	dprintf(STDOUT_FILENO, HDR_DUMP_MSG);
 
-	// 원본 IP 헤더 필드 파싱
-	int version = int_hdr->version;
-	int ihl = int_hdr->ihl;
-	int tos = int_hdr->tos;
-	uint16_t tot_len = ntohs(int_hdr->tot_len);
-	uint16_t id = ntohs(int_hdr->id);
-	uint16_t frag = ntohs(int_hdr->frag_off);
+	int version = ip_hdr->version;
+	int ihl = ip_hdr->ihl;
+	int tos = ip_hdr->tos;
+	uint16_t tot_len = ntohs(ip_hdr->tot_len);
+	uint16_t id = ntohs(ip_hdr->id);
+	uint16_t frag = ntohs(ip_hdr->frag_off);
 	int flags = frag >> 13;
 	int frag_off = frag & 0x1fff;
-	int ttl = int_hdr->ttl;
-	int protocol = int_hdr->protocol;
-	uint16_t checksum = ntohs(int_hdr->check);
+	int ttl = ip_hdr->ttl;
+	int protocol = ip_hdr->protocol;
+	uint16_t checksum = ntohs(ip_hdr->check);
 
-	struct in_addr src, dst;
 	char src_str[INET_ADDRSTRLEN], dst_str[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &(int_hdr->saddr), src_str, INET_ADDRSTRLEN);
-	inet_ntop(AF_INET, &(int_hdr->daddr), dst_str, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(ip_hdr->saddr), src_str, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(ip_hdr->daddr), dst_str, INET_ADDRSTRLEN);
 
 	dprintf(STDOUT_FILENO,
 		" %d  %d  %02x %04x %04x   %d %04x  %02x  %02x %04x %s  %s\n",

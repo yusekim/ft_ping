@@ -8,4 +8,5 @@ void	signal_dfl(void);
 void	on_signo(void);
 void	off_signo(void);
 int		get_signo(void);
+
 #endif

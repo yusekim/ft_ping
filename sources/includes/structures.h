@@ -37,17 +37,17 @@ struct s_options
 
 struct s_ping_info
 {
-	struct addrinfo		*dest_info;			// needs to free
+	struct addrinfo		*dest_info;
 	t_slist				*packets;
 	uint16_t			count;
 };
 
 struct s_slist
 {
-	int						val;			// seq number
+	int						val;			// same as packet seq number
 	int						level;
 	int						is_received;
-	char					packet[64];
+	char					packet[PACKET_SIZE];
 	struct timespec			senttime;
 	double					time_taken_ms;
 	struct s_slist			*level_ptrs[MAX_LEVEL + 1];

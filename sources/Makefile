@@ -15,7 +15,7 @@ LINE_CLEAR  =   "\x1b[1A\x1b[M"
 
 NAME = ft_ping
 CC = cc
-CFLAGS = -I $(HEADERS_DIR) #-Wall -Wextra -Werror
+CFLAGS = -I $(HEADERS_DIR) -Wall -Wextra -Werror
 LDFLAGS = -lm
 SRCS = ./srcs/main.c \
 		./srcs/parse.c \
@@ -24,7 +24,6 @@ SRCS = ./srcs/main.c \
 		./srcs/exec.c \
 		./srcs/exec_utils.c \
 		./srcs/ping_signal.c \
-		./srcs/utils.c \
 		./srcs/skip_list.c
 OBJS = $(SRCS:.c=.o)
 
@@ -33,26 +32,25 @@ HEADERS_DIR=./includes
 all : $(NAME)
 
 $(NAME) : $(OBJS)
-	echo $(GREEN)"---building ft_ping"
 	$(CC) $(CFLAGS) -o $(NAME) $^ $(LDFLAGS)
 	@echo $(GREEN)"\n==========================================================\n"$(EOC)
 	@echo $(YELLOW)"                     FT_PING IS READY"$(EOC)
 	@echo $(GREEN)"\n==========================================================\n"$(EOC)
 
 %.o : %.c
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean :
-	@echo $(GREEN)"---make clean"$(EOC)
 	@rm -fr $(OBJS) $(BONUS_OBJS)
+	@echo $(GREEN)"---make clean"$(EOC)
 
 fclean : clean
-	@echo $(GREEN)"---make fclean"$(EOC)
 	@rm -fr $(NAME)
+	@echo $(GREEN)"---make fclean"$(EOC)
 
 re :
-	@echo $(GREEN)"---make re"
 	@$(MAKE) fclean
 	@$(MAKE) all
+	@echo $(GREEN)"---make re"
 
 .PHONY : all bonus clean fclean re

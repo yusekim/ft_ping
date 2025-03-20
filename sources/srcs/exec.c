@@ -5,35 +5,38 @@
 int exec_ping(t_options *options)
 {
 	srand48(time(NULL));
-	int len = split_len(options->hosts);
 	char ipstr[INET_ADDRSTRLEN];
 	t_ping_info *info;
 	struct timespec now, ps_timeout, w_timeout, w_now;
 	fd_set readfds;
 
 	signal(SIGINT, sig_handler);
-	ps_timeout.tv_nsec = 50000000L;
+	ps_timeout.tv_nsec = 100000000L;
 	ps_timeout.tv_sec = 0;
-	for (int i = 0; i < len; i++)
+	if (options->flags & W_FLAG)
+		clock_gettime(CLOCK_MONOTONIC_COARSE, &w_timeout);
+	for (int i = 0; i < options->hosts_num; i++)
 	{
 		info = build_info(options, i);
-		if (!info)
-			ping_exit(options, info, 1);
+		if (info == NULL)
+		{
+			split_free(options->hosts);
+			close(options->sockfd);
+			return (1);
+		}
 		uint16_t seqnum = 0;
 		t_stat stat;
 		now.tv_sec = 0;
-		if (options->flags & W_FLAG)
-			clock_gettime(CLOCK_MONOTONIC_COARSE, &w_timeout);
 		struct sockaddr_in *addr = (struct sockaddr_in *)info->dest_info->ai_addr;
 		inet_ntop(info->dest_info->ai_family, &(addr->sin_addr), ipstr, sizeof(ipstr));
-		dprintf(STDOUT_FILENO, "FT_PING %s (%s): %d data bytes", options->hosts[i], ipstr, PACKET_SIZE - sizeof(struct icmphdr));
+		dprintf(STDOUT_FILENO, "FT_PING %s (%s): %ld data bytes", options->hosts[i], ipstr, PACKET_SIZE - sizeof(struct icmphdr));
 		if (options->flags & V_FLAG)
 			dprintf(STDOUT_FILENO, ", id 0x%x = %d", options->id, options->id);
 		dprintf(STDOUT_FILENO, "\n");
 		set_stat(&stat);
 		while(1)
 		{
-			if (sendpacket(i, options, info, &now, &seqnum, &stat) < 0)
+			if (sendpacket(options, info, &now, &seqnum, &stat) != 0)
 				break;
 			clock_gettime(CLOCK_MONOTONIC_COARSE, &w_now);
 			if (check_ping_expired(options, info, &w_now))
@@ -54,24 +57,14 @@ int exec_ping(t_options *options)
 			}
 			else if (ret > 0)
 			{
-				char recvbuf[1024];
+				char recvbuf[1024] = {0};
 				ssize_t recvlen = recvfrom(options->sockfd, recvbuf, 1023, 0, NULL, NULL);
 				struct iphdr *ip = (struct iphdr *)recvbuf;
 				struct icmphdr *icmprecv = (struct icmphdr *)(recvbuf + (ip->ihl * 4));
 				uint16_t recved_seqnum;
-				if (icmprecv->type == ICMP_TIMXCEED)
-				{
-					dprintf(STDOUT_FILENO, "%d bytes from %s: Time to live exceeded\n", recvlen - IPHDR_SIZE, ipstr);
-					struct iphdr *itn_hdr = (struct iphdr *)((char *)icmprecv + sizeof(struct icmphdr));
-					struct icmphdr *sent_icmp = (struct icmphdr *)((char *)itn_hdr + (itn_hdr->ihl * 4));
-					t_slist *node = slist_search(info->packets, sent_icmp->un.echo.sequence);
-					if (node == NULL)
-						break;
-					node->is_received = 1;
-					if (options->flags & V_FLAG)
-						print_verbose(itn_hdr, sent_icmp);
-				}
-				else if (icmprecv->type == ICMP_ECHOREPLY && calculate_cksum((void *)icmprecv, recvlen - IPHDR_SIZE) == 0)
+				if (calculate_cksum((void *)icmprecv, recvlen - IPHDR_SIZE) != 0)
+					continue;
+				if (icmprecv->type == ICMP_ECHOREPLY)
 				{
 					struct timespec recvnow;
 					clock_gettime(CLOCK_MONOTONIC, &recvnow);
@@ -81,7 +74,7 @@ int exec_ping(t_options *options)
 					node->time_taken_ms = timespec_diff(node->senttime, recvnow);
 					stat.recved++;
 					recved_seqnum = ntohs(icmprecv->un.echo.sequence);
-					dprintf(STDOUT_FILENO, "%d bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms",
+					dprintf(STDOUT_FILENO, "%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms",
 							recvlen - IPHDR_SIZE,
 							ipstr,
 							recved_seqnum,
@@ -91,6 +84,7 @@ int exec_ping(t_options *options)
 					if (node->is_received)
 					{
 						dprintf(STDOUT_FILENO, " (DUP!)");
+						stat.recved--;
 						stat.dup_count++;
 					}
 					stat.sum += node->time_taken_ms;
@@ -100,18 +94,51 @@ int exec_ping(t_options *options)
 					if (stat.min > node->time_taken_ms)
 						stat.min = node->time_taken_ms;
 					node->is_received = 1;
-					memset(recvbuf, 0, 1024);
+				}
+				else if (icmprecv->type == ICMP_ECHO)
+					continue;
+				else
+				{
+					if (icmprecv->type == ICMP_TIMXCEED)
+						dprintf(STDOUT_FILENO, "%ld bytes from %s: Time to live exceeded\n", recvlen - IPHDR_SIZE, ipstr);
+					else if (icmprecv->type == ICMP_UNREACH && icmprecv->code == ICMP_UNREACH_HOST)
+						dprintf(STDOUT_FILENO, "%ld bytes from %s: Destination Host Unreachable\n", recvlen - IPHDR_SIZE, ipstr);
+					struct iphdr *itn_hdr = (struct iphdr *)((char *)icmprecv + sizeof(struct icmphdr));
+					struct icmphdr *sent_icmp = (struct icmphdr *)((char *)itn_hdr + (itn_hdr->ihl * 4));
+					t_slist *node = slist_search(info->packets, sent_icmp->un.echo.sequence);
+					if (node == NULL)
+						continue;
+					node->is_received = 1;
+					if (options->flags & V_FLAG)
+						print_verbose(itn_hdr, sent_icmp);
 				}
 			}
 		}
+		if (options->flags & INVALID_F)
+			break;
 		dprintf(STDOUT_FILENO, "--- %s ft_ping: statistics ---\n", options->hosts[i]);
 		print_stats(info->packets->level_ptrs[0], &stat);
+		info_free(info, 0);
+		info = NULL;
 	}
 	close(options->sockfd);
-	ping_exit(options, info, 0);
+	return(ping_exit(options, info, 0));
 }
 
-int sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *prev, uint16_t *seqnum, t_stat *stat)
+t_ping_info *build_info(t_options *options, int idx)
+{
+	t_ping_info *info = calloc(1, sizeof(t_ping_info));
+	if (info == NULL)
+		return info_free(info, 1);
+	info->dest_info = getdestinfo(options->hosts[idx]);
+	if (info->dest_info == NULL)
+		return (info_free(info, 0));
+	if (options->flags & C_FLAG)
+		info->count = options->packets_count;
+	return info;
+}
+
+int sendpacket(t_options *options, t_ping_info *info, struct timespec *prev, uint16_t *seqnum, t_stat *stat)
 {
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -120,6 +147,11 @@ int sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *
 	if (options->flags & C_FLAG && info->count == 0)
 		return 0;
 	t_slist *newnode = slist_push_back(&info->packets, *seqnum);
+	if (newnode == NULL)
+	{
+		options->flags |= INVALID_F;
+		return -1;
+	}
 	char packet[PACKET_SIZE] = {0};
 	struct icmphdr *icmp = (struct icmphdr *)(packet);
 	icmp->type = ICMP_ECHO;
@@ -136,7 +168,7 @@ int sendpacket(int idx, t_options *options, t_ping_info *info, struct timespec *
 	if (get_signo())
 	{
 		prev->tv_sec = 0;
-		return -1;
+		return 1;
 	}
 	return 0;
 }
@@ -145,9 +177,7 @@ int check_ping_expired(t_options *options, t_ping_info *info, struct timespec *n
 {
 	t_slist **head = &info->packets;
 	t_slist *node = (*head)->level_ptrs[0];
-	int timeout = MAX_WAIT, waiting = 0;
-	if (options->flags & CW_FLAG)
-		timeout = options->linger;
+	int timeout = options->linger, waiting = 0;
 	while (node)
 	{
 		if (!node->is_received)
@@ -164,24 +194,27 @@ int check_ping_expired(t_options *options, t_ping_info *info, struct timespec *n
 	return 0;
 }
 
-
-
-t_ping_info *build_info(t_options *options, int idx)
+uint16_t calculate_cksum(const void *data, size_t len)
 {
-	t_ping_info *info = calloc(1, sizeof(t_ping_info));
-	if (info == NULL)
-		return info_free(info, 1);
-	info->dest_info = getdestinfo(options->hosts[idx]);
-	if (info->dest_info == NULL)
-		return (info_free(info, 0));
-	if (options->flags & C_FLAG)
-		info->count = options->packets_count;
-	return info;
+	const uint16_t *buf = data;
+	uint32_t sum = 0;
+
+	while (len > 1)
+	{
+		sum += *buf++;
+		len -= 2;
+	}
+	if (len == 1)
+		sum += *(const uint8_t *)buf;
+	while (sum >> 16)
+		sum = (sum & 0xFFFF) + (sum >> 16);
+
+	return (uint16_t)(~sum);
 }
 
 void print_stats(t_slist *head, t_stat *stat)
 {
-	double trans_avg = ((double)(stat->sent - (stat->recved - stat->dup_count)) / (double)stat->sent) * 100;
+	double trans_avg = ((double)(stat->sent - (stat->recved)) / (double)stat->sent) * 100;
 	dprintf(STDOUT_FILENO, "%d packets transmitted, %d packets received, ",
 			stat->sent,
 			stat->recved - stat->dup_count);
@@ -189,7 +222,7 @@ void print_stats(t_slist *head, t_stat *stat)
 	if (stat->dup_count > 0)
 		dprintf(STDOUT_FILENO, "+%d duplicates, ", stat->dup_count);
 	dprintf(STDOUT_FILENO, "%d%% packet loss\n", (int)trans_avg);
-	if (stat->recved - stat->dup_count == 0)
+	if (stat->recved - stat->dup_count <= 0)
 		return ;
 	double rt_avg, rt_stddev = 0;
 	rt_avg = stat->sum / stat->recved;

@@ -59,7 +59,7 @@ t_slist *slist_push_back(t_slist **head, int key)
 
 	if (*head == NULL)
 	{
-		t_slist *new_head = malloc(sizeof(t_slist));
+		t_slist *new_head = calloc(1, sizeof(t_slist));
 		if (!new_head)
 			return NULL;
 		new_head->val = -1;
