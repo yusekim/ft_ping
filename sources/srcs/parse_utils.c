@@ -22,7 +22,7 @@ char *is_ascii_number(char *str)
 
 void print_option_info(t_options *options)
 {
-	char optstr[] = "v?clnwt";
+	char optstr[] = ".?vcWwt";
 	for (int i = 0; i < 7; i++)
 	{
 		if (!(options->flags & (1 << i)))
@@ -30,9 +30,9 @@ void print_option_info(t_options *options)
 	}
 	printf("\n===========ft_ping==============\n");
 	printf("options: [%s]\n", optstr);
-	if (optstr[2] != '.')
-		printf("\tpacket count: %d\n", options->packets_count);
 	if (optstr[3] != '.')
+		printf("\tpacket count: %d\n", options->packets_count);
+	if (optstr[4] != '.')
 		printf("\tlinger: %d\n", options->linger);
 	if (optstr[5] != '.')
 		printf("\ttimeout: %d\n", options->timeout);

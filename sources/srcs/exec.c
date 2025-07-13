@@ -68,10 +68,11 @@ int exec_ping(t_options *options)
 				{
 					struct timespec recvnow;
 					clock_gettime(CLOCK_MONOTONIC, &recvnow);
-					t_slist *node = slist_search(info->packets, ntohs(icmprecv->un.echo.sequence));
+					t_list *node = list_search(info->packets, ntohs(icmprecv->un.echo.sequence));
 					if (node == NULL)
 						continue;
-					node->time_taken_ms = timespec_diff(node->senttime, recvnow);
+					t_packet_data *data = (t_packet_data *)(node->data);
+					data->time_taken_ms = timespec_diff(data->senttime, recvnow);
 					stat.recved++;
 					recved_seqnum = ntohs(icmprecv->un.echo.sequence);
 					dprintf(STDOUT_FILENO, "%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms",
@@ -79,21 +80,21 @@ int exec_ping(t_options *options)
 							ipstr,
 							recved_seqnum,
 							ip->ttl,
-							node->time_taken_ms);
+							data->time_taken_ms);
 
-					if (node->is_received)
+					if (data->is_received)
 					{
 						dprintf(STDOUT_FILENO, " (DUP!)");
 						stat.recved--;
 						stat.dup_count++;
 					}
-					stat.sum += node->time_taken_ms;
+					stat.sum += data->time_taken_ms;
 					dprintf(STDOUT_FILENO, "\n");
-					if (stat.max < node->time_taken_ms)
-						stat.max = node->time_taken_ms;
-					if (stat.min > node->time_taken_ms)
-						stat.min = node->time_taken_ms;
-					node->is_received = 1;
+					if (stat.max < data->time_taken_ms)
+						stat.max = data->time_taken_ms;
+					if (stat.min > data->time_taken_ms)
+						stat.min = data->time_taken_ms;
+					data->is_received = 1;
 				}
 				else if (icmprecv->type == ICMP_ECHO)
 					continue;
@@ -105,10 +106,11 @@ int exec_ping(t_options *options)
 						dprintf(STDOUT_FILENO, "%ld bytes from %s: Destination Host Unreachable\n", recvlen - IPHDR_SIZE, ipstr);
 					struct iphdr *itn_hdr = (struct iphdr *)((char *)icmprecv + sizeof(struct icmphdr));
 					struct icmphdr *sent_icmp = (struct icmphdr *)((char *)itn_hdr + (itn_hdr->ihl * 4));
-					t_slist *node = slist_search(info->packets, sent_icmp->un.echo.sequence);
+					t_list *node = list_search(info->packets, ntohs(sent_icmp->un.echo.sequence));
 					if (node == NULL)
 						continue;
-					node->is_received = 1;
+					t_packet_data *data = (t_packet_data *)(node->data);
+					data->is_received = 1;
 					if (options->flags & V_FLAG)
 						print_verbose(itn_hdr, sent_icmp);
 				}
@@ -117,7 +119,7 @@ int exec_ping(t_options *options)
 		if (options->flags & INVALID_F)
 			break;
 		dprintf(STDOUT_FILENO, "--- %s ft_ping: statistics ---\n", options->hosts[i]);
-		print_stats(info->packets->level_ptrs[0], &stat);
+		print_stats(info->packets, &stat);
 		info_free(info, 0);
 		info = NULL;
 	}
@@ -146,7 +148,7 @@ int sendpacket(t_options *options, t_ping_info *info, struct timespec *prev, uin
 		return 0;
 	if (options->flags & C_FLAG && info->count == 0)
 		return 0;
-	t_slist *newnode = slist_push_back(&info->packets, *seqnum);
+	t_list *newnode = list_push_back(&info->packets, *seqnum);
 	if (newnode == NULL)
 	{
 		options->flags |= INVALID_F;
@@ -175,19 +177,20 @@ int sendpacket(t_options *options, t_ping_info *info, struct timespec *prev, uin
 
 int check_ping_expired(t_options *options, t_ping_info *info, struct timespec *now)
 {
-	t_slist **head = &info->packets;
-	t_slist *node = (*head)->level_ptrs[0];
+	t_list **head = &info->packets;
+	t_list *node = *head;
 	int timeout = options->linger, waiting = 0;
 	while (node)
 	{
-		if (!node->is_received)
+		t_packet_data *data = (t_packet_data *)node->data;
+		if (!data->is_received)
 		{
-			if ((int)timespec_diff(node->senttime, *now) / 1000 > timeout)
-				slist_delete(head, node->val);
+			if ((int)timespec_diff(data->senttime, *now) / 1000 > timeout)
+				list_delete(head, data->val);
 			else
 				waiting++;
 		}
-		node = node->level_ptrs[0];
+		node = node->next;
 	}
 	if (options->flags & C_FLAG && info->count == 0 && waiting == 0)
 		return 1;
@@ -212,7 +215,7 @@ uint16_t calculate_cksum(const void *data, size_t len)
 	return (uint16_t)(~sum);
 }
 
-void print_stats(t_slist *head, t_stat *stat)
+void print_stats(t_list *head, t_stat *stat)
 {
 	double trans_avg = ((double)(stat->sent - (stat->recved)) / (double)stat->sent) * 100;
 	dprintf(STDOUT_FILENO, "%d packets transmitted, %d packets received, ",
@@ -226,13 +229,15 @@ void print_stats(t_slist *head, t_stat *stat)
 		return ;
 	double rt_avg, rt_stddev = 0;
 	rt_avg = stat->sum / stat->recved;
+	t_list *node = head;
 	for (int i = 0; i < stat->recved - stat->dup_count; i++)
 	{
 		double val = 0;
-		if (head->time_taken_ms)
-			val = head->time_taken_ms - rt_avg;
+		t_packet_data *data = (t_packet_data *)(node->data);
+		if (data->time_taken_ms)
+			val = data->time_taken_ms - rt_avg;
 		rt_stddev += val * val;
-		head = head->level_ptrs[0];
+		node = node->next;
 	}
 	rt_stddev = sqrt(rt_stddev / stat->recved);
 	dprintf(STDOUT_FILENO, ROUND_TRIP_MSG, stat->min, rt_avg, stat->max, rt_stddev);

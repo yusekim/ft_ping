@@ -8,7 +8,7 @@ void *info_free(t_ping_info *info, int is_perror)
 		perror("ft_ping");
 	if (!info)
 		return NULL;
-	slist_free(info->packets);
+	list_free(info->packets);
 	if (info->dest_info)
 		freeaddrinfo(info->dest_info);
 	free(info);

@@ -24,7 +24,7 @@ SRCS = ./srcs/main.c \
 		./srcs/exec.c \
 		./srcs/exec_utils.c \
 		./srcs/ping_signal.c \
-		./srcs/skip_list.c
+		./srcs/list_utils.c
 OBJS = $(SRCS:.c=.o)
 
 HEADERS_DIR=./includes
@@ -51,6 +51,6 @@ fclean : clean
 re :
 	@$(MAKE) fclean
 	@$(MAKE) all
-	@echo $(GREEN)"---make re"
+	@echo $(GREEN)"---make re"$(EOC)
 
 .PHONY : all bonus clean fclean re

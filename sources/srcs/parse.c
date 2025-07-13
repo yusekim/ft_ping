@@ -70,9 +70,6 @@ void handle_options(t_options *options, char *arg, char ***argv)
 			if (get_opt_val(options, arg[i], argv))
 				return;
 			break;
-		case 'n':
-			options->flags |= N_FLAG;
-			break;
 		case 'W':
 			options->flags |= CW_FLAG;
 			if (get_opt_val(options, arg[i], argv))
@@ -108,10 +105,7 @@ int get_opt_val(t_options *options, char flag, char ***argv)
 	if (check)
 	{
 		options->flags |= INVALID_F;
-		if (flag == 'l')
-			dprintf(STDERR_FILENO, "%s preload value (%s)\n", INVALID_MSG, **argv);
-		else
-			dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_MSG, **argv, check);
+		dprintf(STDERR_FILENO, "%s value (`%s' near `%s')\n", INVALID_MSG, **argv, check);
 		return 1;
 	}
 	long value = atol(**argv);

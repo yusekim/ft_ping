@@ -13,60 +13,63 @@
 # include <time.h>
 # include "strs.h"
 
-
 # define MAX_LEVEL 9
 # define PACKET_SIZE 64
 # define IPHDR_SIZE 20
-typedef struct s_options				t_options;
-typedef struct s_ping_info				t_ping_info;
-typedef struct s_slist					t_slist;
-typedef struct s_stat					t_stat;
+typedef struct s_options		t_options;
+typedef struct s_ping_info		t_ping_info;
+typedef struct s_packet_data	t_packet_data;
+typedef struct s_list			t_list;
+typedef struct s_stat			t_stat;
 
 struct s_options
 {
-	unsigned char	flags;
-	char			**hosts;
-	int				hosts_num;
-	int				sockfd;
-	int				timeout;
-	int				linger;
-	uint8_t			ttl_val;
-	uint16_t		packets_count;
-	uint16_t		id;
+	unsigned char				flags;
+	char						**hosts;
+	int							hosts_num;
+	int							sockfd;
+	int							timeout;
+	int							linger;
+	uint8_t						ttl_val;
+	uint16_t					packets_count;
+	uint16_t					id;
 };
 
 struct s_ping_info
 {
-	struct addrinfo		*dest_info;
-	t_slist				*packets;
-	uint16_t			count;
+	struct addrinfo				*dest_info;
+	t_list						*packets;
+	uint16_t					count;
 };
 
-struct s_slist
+struct s_packet_data
 {
-	int						val;			// same as packet seq number
-	int						level;
-	int						is_received;
-	char					packet[PACKET_SIZE];
-	struct timespec			senttime;
-	double					time_taken_ms;
-	struct s_slist			*level_ptrs[MAX_LEVEL + 1];
+	int							val;			// same as packet seq number
+	int							is_received;
+	char						packet[PACKET_SIZE];
+	struct timespec				senttime;
+	double						time_taken_ms;
+};
+
+struct s_list
+{
+	void						*data;
+	struct s_list				*next;
 };
 
 struct s_stat
 {
-	int					sent;
-	int					recved;
-	int					dup_count;
-	double				min;
-	double				sum;
-	double				max;
+	int							sent;
+	int							recved;
+	int							dup_count;
+	double						min;
+	double						sum;
+	double						max;
 };
 
-t_slist			*slist_search(t_slist *head, int key);
-t_slist			*slist_push_back(t_slist **head, int key);
-void			slist_delete(t_slist **head, int key);
-void			slist_free(t_slist *head);
-int				randomlevel();
+t_list			*list_search(t_list *head, int key);
+t_list			*list_push_back(t_list **head, int key);
+void			list_delete(t_list **head, int key);
+void			list_free(t_list *head);
 
 #endif

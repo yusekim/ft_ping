@@ -4,15 +4,11 @@
 
 # define PING_USAGE "Usage: ft_ping [OPTION...] HOST ...\n" \
 "\n" \
-" Options valid for all request types:\n" \
 "  -v, verbose                verbose output\n" \
-"  -n, numeric                do not resolve host addresses\n" \
-"  -w, timeout=N              stop after N seconds\n" \
-"      --ttl=N                specify N as time-to-live\n" \
-"\n" \
-" Options valid for echo requests:\n" \
-"  -f, flood                  flood ping (root only)\n" \
-"  -l, preload=NUMBER         send NUMBER packets as fast as possible before\n" \
+"  -c n                       Stop after sending and receiving answers to a total of n packets.\n" \
+"  -W n                       Maximum number of seconds n to wait for a response.\n" \
+"  -w n                       Stop after n seconds\n" \
+"      --ttl=n                Specify n as time-to-live\n" \
 "                             falling into normal mode of behavior (root only)\n" \
 "  -?                         give this help list\n"
 

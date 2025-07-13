@@ -12,7 +12,7 @@ t_ping_info		*build_info(t_options *options, int idx);
 int 			sendpacket(t_options *options, t_ping_info *info, struct timespec *prev, uint16_t *seqnum, t_stat *stat);
 int				check_ping_expired(t_options *options, t_ping_info *info, struct timespec *now);
 uint16_t		calculate_cksum(const void *data, size_t len);
-void			print_stats(t_slist *head, t_stat *stat);
+void			print_stats(t_list *head, t_stat *stat);
 
 void			*info_free(t_ping_info *info, int is_perror);
 struct addrinfo	*getdestinfo(char *hostname);
