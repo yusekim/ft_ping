@@ -182,6 +182,7 @@ int check_ping_expired(t_options *options, t_ping_info *info, struct timespec *n
 	int timeout = options->linger, waiting = 0;
 	while (node)
 	{
+		t_list *next = node->next;
 		t_packet_data *data = (t_packet_data *)node->data;
 		if (!data->is_received)
 		{
@@ -190,7 +191,7 @@ int check_ping_expired(t_options *options, t_ping_info *info, struct timespec *n
 			else
 				waiting++;
 		}
-		node = node->next;
+		node = next;
 	}
 	if (options->flags & C_FLAG && info->count == 0 && waiting == 0)
 		return 1;

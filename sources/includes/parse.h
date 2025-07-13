@@ -8,7 +8,7 @@
 "  -c n                       Stop after sending and receiving answers to a total of n packets.\n" \
 "  -W n                       Maximum number of seconds n to wait for a response.\n" \
 "  -w n                       Stop after n seconds\n" \
-"      --ttl=n                Specify n as time-to-live\n" \
+"  --ttl=n                    Specify n as time-to-live\n" \
 "                             falling into normal mode of behavior (root only)\n" \
 "  -?                         give this help list\n"
 
